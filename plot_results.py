@@ -124,14 +124,10 @@ def create_mode_mixings_plot(qs, thetas, ratios, z_axis, name_suffix=""):
     axis[0].set_ylim(top=6e1)
     axis[0].set_xlim(0 - 0.2, np.pi + 0.2)
 
-    if 'kick_angles' in name_suffix:
-        axis[0].set_xlabel(
-            r"$\Delta\theta(\dot{J}^{t=\mathrm{peak}},\chi_{f}^{t=+\infty})$"
-        )
-    else:
-        axis[0].set_xlabel(
-            r"$q$"
-        )
+    axis[0].set_xlabel(
+        r"$\Delta\theta(\dot{J}^{t=\mathrm{peak}},\chi_{f}^{t=+\infty})$"
+    )
+    
     if not "mirror" in name_suffix:
         axis[0].set_ylabel(r"$A_{(\pm,2,1,0)}/A_{(\pm,2,2,0)}$")
     else:
@@ -143,7 +139,10 @@ def create_mode_mixings_plot(qs, thetas, ratios, z_axis, name_suffix=""):
     c = fig.colorbar(result, cax=axis[1], orientation="vertical", pad=0)
 
     c.ax.get_yaxis().labelpad = 15
-    c.ax.set_ylabel(r"$\Delta\theta(v^{t=-\infty},v^{t=+\infty})$", rotation=270)
+    if 'kick_angles' in name_suffix:
+        c.ax.set_ylabel(r"$\Delta\theta(v^{t=-\infty},v^{t=+\infty})$", rotation=270)
+    else:
+        c.ax.set_ylabel(r"$q$", rotation=270)
 
     plt.savefig(f"CCEFigures/mode_mixings{name_suffix}.pdf", bbox_inches="tight")
 
