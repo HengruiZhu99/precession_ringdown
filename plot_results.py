@@ -64,11 +64,11 @@ def create_parameters_plot(qs, thetas, ratios, kick_angles):
         r"$\log_{10}\left(A_{(+,2,1,0)}/A_{(+,2,2,0)}\right)$", rotation=270, fontsize=6
     )
 
-    plt.savefig("plots/parameters.pdf", bbox_inches="tight")
+    plt.savefig("CCEFigures/parameters.pdf", bbox_inches="tight")
 
 
 # Figure 1 panel B
-def create_mode_mixings_plot(qs, thetas, ratios, kick_angles, name_suffix=""):
+def create_mode_mixings_plot(qs, thetas, ratios, z_axis, name_suffix=""):
     fig, axis = plt.subplots(
         1,
         2,
@@ -79,7 +79,7 @@ def create_mode_mixings_plot(qs, thetas, ratios, kick_angles, name_suffix=""):
     )
     plt.subplots_adjust(hspace=0.02, wspace=0.02)
 
-    result = axis[0].scatter(thetas, ratios, c=kick_angles, s=4, cmap="rainbow")
+    result = axis[0].scatter(thetas, ratios, c=z_axis, s=4, cmap="rainbow")
 
     angles = np.linspace(0, np.pi - 0.01, 100)
     rotation_factors = np.array(
@@ -140,7 +140,7 @@ def create_mode_mixings_plot(qs, thetas, ratios, kick_angles, name_suffix=""):
     c.ax.get_yaxis().labelpad = 15
     c.ax.set_ylabel(r"$\Delta\theta(v^{t=-\infty},v^{t=+\infty})$", rotation=270)
 
-    plt.savefig(f"plots/mode_mixings{name_suffix}.pdf", bbox_inches="tight")
+    plt.savefig(f"CCEFigures/mode_mixings{name_suffix}.pdf", bbox_inches="tight")
 
 
 # Figure 2 panel A
@@ -195,7 +195,9 @@ def create_asymmetric_mode_mixings_plot(
     c.ax.get_yaxis().labelpad = 15
     c.ax.set_ylabel(r"$\Delta\theta(v^{t=-\infty},v^{t=+\infty})$", rotation=270)
 
-    plt.savefig(f"plots/asymmetric_mode_mixings{name_suffix}.pdf", bbox_inches="tight")
+    plt.savefig(
+        f"CCEFigures/asymmetric_mode_mixings{name_suffix}.pdf", bbox_inches="tight"
+    )
 
 
 # Figure 2 panel B, do we want this to have the same yaxis as above?
@@ -248,7 +250,7 @@ def create_pro_retro_mixings_plot(qs, thetas, ratios, kick_angles, name_suffix="
     c.ax.get_yaxis().labelpad = 15
     c.ax.set_ylabel(r"$\Delta\theta(v^{t=-\infty},v^{t=+\infty})$", rotation=270)
 
-    plt.savefig(f"plots/pro_retro_mixings{name_suffix}.pdf", bbox_inches="tight")
+    plt.savefig(f"CCEFigures/pro_retro_mixings{name_suffix}.pdf", bbox_inches="tight")
 
 
 def compute_mode_amplitude(data, mode, pro_retro=False, mirror=False):
@@ -602,10 +604,13 @@ def main():
 
     create_parameters_plot(qs, thetas, ratios_L2M1, kick_angles)
     create_mode_mixings_plot(
-        qs, thetas, ratios_L2M1_pro_retro, kick_angles, "_L2M1_pro_retro"
+        qs, thetas, ratios_L2M1_pro_retro, kick_angles, "_L2M1_pro_retro_kick_angles"
     )
     create_mode_mixings_plot(
-        qs, thetas, ratios_L2M1_pro_retro_mirror, kick_angles, "_L2M1_pro_retro_mirror"
+        qs, thetas, ratios_L2M1_pro_retro_mirror, qs, "_L2M1_pro_retro_mirror_mass_ratio"
+    )
+    create_mode_mixings_plot(
+        qs, thetas, ratios_L2M1_pro_retro_mirror, kick_angles, "_L2M1_pro_retro_mirror_kick_angles"
     )
     create_asymmetric_mode_mixings_plot(qs, thetas, ratios_L2M1, kick_angles, "_L2M1")
     create_pro_retro_mixings_plot(
