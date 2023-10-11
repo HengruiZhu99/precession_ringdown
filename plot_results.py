@@ -124,9 +124,14 @@ def create_mode_mixings_plot(qs, thetas, ratios, z_axis, name_suffix=""):
     axis[0].set_ylim(top=6e1)
     axis[0].set_xlim(0 - 0.2, np.pi + 0.2)
 
-    axis[0].set_xlabel(
-        r"$\Delta\theta(\dot{J}^{t=\mathrm{peak}},\chi_{f}^{t=+\infty})$"
-    )
+    if 'kick_angles' in name_suffix:
+        axis[0].set_xlabel(
+            r"$\Delta\theta(\dot{J}^{t=\mathrm{peak}},\chi_{f}^{t=+\infty})$"
+        )
+    else:
+        axis[0].set_xlabel(
+            r"$q$"
+        )
     if not "mirror" in name_suffix:
         axis[0].set_ylabel(r"$A_{(\pm,2,1,0)}/A_{(\pm,2,2,0)}$")
     else:
