@@ -39,7 +39,7 @@ def compute_rotation_factor(input_mode, output_mode, theta):
 
 
 # Figure 1 panel A
-def create_parameters_plot(qs, thetas, ratios, kick_angles):
+def create_parameters_plot(qs, thetas, ratios):
     fig, axis = plt.subplots(
         1,
         2,
@@ -68,7 +68,7 @@ def create_parameters_plot(qs, thetas, ratios, kick_angles):
 
 
 # Figure 1 panel B
-def create_mode_mixings_plot(qs, thetas, ratios, z_axis, name_suffix=""):
+def create_mode_mixings_plot(thetas, ratios, z_axis, name_suffix=""):
     fig, axis = plt.subplots(
         1,
         2,
@@ -149,7 +149,7 @@ def create_mode_mixings_plot(qs, thetas, ratios, z_axis, name_suffix=""):
 
 # Figure 2 panel A
 def create_asymmetric_mode_mixings_plot(
-    qs, thetas, ratios, kick_angles, name_suffix=""
+    thetas, ratios, kick_angles, name_suffix=""
 ):
     fig, axis = plt.subplots(
         1,
@@ -205,7 +205,7 @@ def create_asymmetric_mode_mixings_plot(
 
 
 # Figure 2 panel B, do we want this to have the same yaxis as above?
-def create_pro_retro_mixings_plot(qs, thetas, ratios, kick_angles, name_suffix=""):
+def create_pro_retro_mixings_plot(thetas, ratios, kick_angles, name_suffix=""):
     fig, axis = plt.subplots(
         1,
         2,
@@ -256,41 +256,104 @@ def create_pro_retro_mixings_plot(qs, thetas, ratios, kick_angles, name_suffix="
 
     plt.savefig(f"CCEFigures/pro_retro_mixings{name_suffix}.pdf", bbox_inches="tight")
 
+def create_fit_plot(thetas, vertical_axis, qs, name_suffix='errors'):
+    fig, axis = plt.subplots(
+        1,
+        2,
+        figsize=(onecol_w_in, onecol_w_in * 0.65),
+        sharex=False,
+        sharey=False,
+        width_ratios=[1, 0.05],
+    )
+    plt.subplots_adjust(hspace=0.02, wspace=0.02)
+
+    result = axis[0].scatter(thetas, vertical_axis, s=4, c=qs, cmap="rainbow")
+    
+    axis[0].set_yscale('log')
+    
+    axis[0].set_xlabel(
+        r"$\Delta\theta(\dot{J}^{t=\mathrm{peak}},\chi_{f}^{t=+\infty})$"
+    )
+    if 'error' in name_suffix:
+        axis[0].set_ylabel(r"relative error")
+    elif 'mismatch' in name_suffix:
+        axis[0].set_ylabel(r"$\mathrm{Mismatch}\,\mathcal{M}$")
+    elif 't0' in name_suffix:
+        axis[0].set_ylabel(r"$t_{0}$")
+    elif 'CV' in name_suffix:
+        axis[0].set_ylabel(r"Coefficient of Variation")
+
+    c = fig.colorbar(result, cax=axis[1], orientation="vertical", pad=2.5)
+
+    c.ax.get_yaxis().labelpad = 15
+    c.ax.set_ylabel(
+        r"$q$", rotation=270, fontsize=6
+    )
+
+    plt.savefig(f"CCEFigures/{name_suffix}.pdf", bbox_inches="tight")
+    
+
+def create_kick_plot(thetas, kick_angles, qs):
+    fig, axis = plt.subplots(
+        1,
+        2,
+        figsize=(onecol_w_in, onecol_w_in * 0.65),
+        sharex=False,
+        sharey=False,
+        width_ratios=[1, 0.05],
+    )
+    plt.subplots_adjust(hspace=0.02, wspace=0.02)
+
+    result = axis[0].scatter(thetas, kick_angles, s=4, c=qs, cmap="rainbow")
+
+    axis[0].set_xlabel(
+        r"$\Delta\theta(\dot{J}^{t=\mathrm{peak}},\chi_{f}^{t=+\infty})$"
+    )
+    axis[0].set_ylabel(r"$\Delta\theta(v)$")
+
+    c = fig.colorbar(result, cax=axis[1], orientation="vertical", pad=2.5)
+
+    c.ax.get_yaxis().labelpad = 15
+    c.ax.set_ylabel(
+        r"$q$", rotation=270, fontsize=6
+    )
+
+    plt.savefig("CCEFigures/kick.pdf", bbox_inches="tight")
 
 def compute_mode_amplitude(data, mode, pro_retro=False, mirror=False):
     L, M, N, S = mode
     if pro_retro and not mirror:
         # prograde
         A_mode_pro = (
-            data[str((L, M)).replace(" ", "")][str((L, M, N, S)).replace(" ", "")]["A"][
+            data[str((L, M, N, S)).replace(" ", "")]["A"][
                 0
             ]
             + 1j
-            * data[str((L, M)).replace(" ", "")][str((L, M, N, S)).replace(" ", "")][
+            * data[str((L, M, N, S)).replace(" ", "")][
                 "A"
             ][1]
         )
-        A_mode_pro_std_re = data[str((L, M)).replace(" ", "")][
+        A_mode_pro_std_re = data[
             str((L, M, N, S)).replace(" ", "")
         ]["A_std"][0]
-        A_mode_pro_std_im = data[str((L, M)).replace(" ", "")][
+        A_mode_pro_std_im = data[
             str((L, M, N, S)).replace(" ", "")
         ]["A_std"][1]
 
         # retrograde
         A_mode_retro = (
-            data[str((L, M)).replace(" ", "")][str((L, M, N, -S)).replace(" ", "")][
+            data[str((L, M, N, -S)).replace(" ", "")][
                 "A"
             ][0]
             + 1j
-            * data[str((L, M)).replace(" ", "")][str((L, M, N, -S)).replace(" ", "")][
+            * data[str((L, M, N, -S)).replace(" ", "")][
                 "A"
             ][1]
         )
-        A_mode_retro_std_re = data[str((L, M)).replace(" ", "")][
+        A_mode_retro_std_re = data[
             str((L, M, N, -S)).replace(" ", "")
         ]["A_std"][0]
-        A_mode_retro_std_im = data[str((L, M)).replace(" ", "")][
+        A_mode_retro_std_im = data[
             str((L, M, N, -S)).replace(" ", "")
         ]["A_std"][1]
 
@@ -301,40 +364,40 @@ def compute_mode_amplitude(data, mode, pro_retro=False, mirror=False):
     elif not pro_retro and mirror:
         # positive M
         A_mode_pM = abs(
-            data[str((L, M)).replace(" ", "")][str((L, M, N, S)).replace(" ", "")]["A"][
+            data[str((L, M, N, S)).replace(" ", "")]["A"][
                 0
             ]
             + 1j
-            * data[str((L, M)).replace(" ", "")][str((L, M, N, S)).replace(" ", "")][
+            * data[str((L, M, N, S)).replace(" ", "")][
                 "A"
             ][1]
         )
         A_mode_pM_std = np.sqrt(
-            data[str((L, M)).replace(" ", "")][str((L, M, N, S)).replace(" ", "")][
+            data[str((L, M, N, S)).replace(" ", "")][
                 "A_std"
             ][0]
             ** 2
-            + data[str((L, M)).replace(" ", "")][str((L, M, N, S)).replace(" ", "")][
+            + data[str((L, M, N, S)).replace(" ", "")][
                 "A_std"
             ][1]
             ** 2
         )
 
         A_mode_nM = abs(
-            data[str((L, -M)).replace(" ", "")][str((L, -M, N, -S)).replace(" ", "")][
+            data[str((L, -M, N, -S)).replace(" ", "")][
                 "A"
             ][0]
             + 1j
-            * data[str((L, -M)).replace(" ", "")][str((L, -M, N, -S)).replace(" ", "")][
+            * data[str((L, -M, N, -S)).replace(" ", "")][
                 "A"
             ][1]
         )
         A_mode_nM_std = np.sqrt(
-            data[str((L, -M)).replace(" ", "")][str((L, -M, N, -S)).replace(" ", "")][
+            data[str((L, -M, N, -S)).replace(" ", "")][
                 "A_std"
             ][0]
             ** 2
-            + data[str((L, -M)).replace(" ", "")][str((L, -M, N, -S)).replace(" ", "")][
+            + data[str((L, -M, N, -S)).replace(" ", "")][
                 "A_std"
             ][1]
             ** 2
@@ -348,69 +411,69 @@ def compute_mode_amplitude(data, mode, pro_retro=False, mirror=False):
     elif pro_retro and mirror:
         # prograde positive M
         A_mode_pro_pM = (
-            data[str((L, M)).replace(" ", "")][str((L, M, N, S)).replace(" ", "")]["A"][
+            data[str((L, M, N, S)).replace(" ", "")]["A"][
                 0
             ]
             + 1j
-            * data[str((L, M)).replace(" ", "")][str((L, M, N, S)).replace(" ", "")][
+            * data[str((L, M, N, S)).replace(" ", "")][
                 "A"
             ][1]
         )
-        A_mode_pro_pM_std_re = data[str((L, M)).replace(" ", "")][
+        A_mode_pro_pM_std_re = data[
             str((L, M, N, S)).replace(" ", "")
         ]["A_std"][0]
-        A_mode_pro_pM_std_im = data[str((L, M)).replace(" ", "")][
+        A_mode_pro_pM_std_im = data[
             str((L, M, N, S)).replace(" ", "")
         ]["A_std"][1]
 
         # retrograde positive M
         A_mode_retro_pM = (
-            data[str((L, M)).replace(" ", "")][str((L, M, N, -S)).replace(" ", "")][
+            data[str((L, M, N, -S)).replace(" ", "")][
                 "A"
             ][0]
             + 1j
-            * data[str((L, M)).replace(" ", "")][str((L, M, N, -S)).replace(" ", "")][
+            * data[str((L, M, N, -S)).replace(" ", "")][
                 "A"
             ][1]
         )
-        A_mode_retro_pM_std_re = data[str((L, M)).replace(" ", "")][
+        A_mode_retro_pM_std_re = data[
             str((L, M, N, -S)).replace(" ", "")
         ]["A_std"][0]
-        A_mode_retro_pM_std_im = data[str((L, M)).replace(" ", "")][
+        A_mode_retro_pM_std_im = data[
             str((L, M, N, -S)).replace(" ", "")
         ]["A_std"][1]
 
         # prograde negative M
         A_mode_pro_nM = (
-            data[str((L, -M)).replace(" ", "")][str((L, -M, N, -S)).replace(" ", "")][
+            data[str((L, -M, N, -S)).replace(" ", "")][
                 "A"
             ][0]
             + 1j
-            * data[str((L, -M)).replace(" ", "")][str((L, -M, N, -S)).replace(" ", "")][
+            * data[str((L, -M, N, -S)).replace(" ", "")][
                 "A"
             ][1]
         )
-        A_mode_pro_nM_std_re = data[str((L, -M)).replace(" ", "")][
+        A_mode_pro_nM_std_re = data[
             str((L, -M, N, -S)).replace(" ", "")
         ]["A_std"][0]
-        A_mode_pro_nM_std_im = data[str((L, -M)).replace(" ", "")][
+        A_mode_pro_nM_std_im = data[
             str((L, -M, N, -S)).replace(" ", "")
         ]["A_std"][1]
 
         # retrograde negative M
         A_mode_retro_nM = (
-            data[str((L, -M)).replace(" ", "")][str((L, -M, N, S)).replace(" ", "")][
+            data[str((L, -M, N, S)).replace(" ", "")][
                 "A"
             ][0]
             + 1j
-            * data[str((L, -M)).replace(" ", "")][str((L, -M, N, S)).replace(" ", "")][
+            * data[str((L, -M, N, S)).replace(" ", "")][
                 "A"
             ][1]
         )
-        A_mode_retro_nM_std_re = data[str((L, -M)).replace(" ", "")][
+        A_mode_retro_nM_std_re = data[
             str((L, -M, N, S)).replace(" ", "")
         ]["A_std"][0]
-        A_mode_retro_nM_std_im = data[str((L, -M)).replace(" ", "")][
+        A_mode_retro_nM_std_im = data[
             str((L, -M, N, S)).replace(" ", "")
         ]["A_std"][1]
 
@@ -433,20 +496,20 @@ def compute_mode_amplitude(data, mode, pro_retro=False, mirror=False):
         )
     else:
         A_mode = abs(
-            data[str((L, M)).replace(" ", "")][str((L, M, N, S)).replace(" ", "")]["A"][
+            data[str((L, M, N, S)).replace(" ", "")]["A"][
                 0
             ]
             + 1j
-            * data[str((L, M)).replace(" ", "")][str((L, M, N, S)).replace(" ", "")][
+            * data[str((L, M, N, S)).replace(" ", "")][
                 "A"
             ][1]
         )
         A_mode_std = np.sqrt(
-            data[str((L, M)).replace(" ", "")][str((L, M, N, S)).replace(" ", "")][
+            data[str((L, M, N, S)).replace(" ", "")][
                 "A_std"
             ][0]
             ** 2
-            + data[str((L, M)).replace(" ", "")][str((L, M, N, S)).replace(" ", "")][
+            + data[str((L, M, N, S)).replace(" ", "")][
                 "A_std"
             ][1]
             ** 2
@@ -486,6 +549,10 @@ def main():
     chi_ps = []
     kick_angles = []
     thetas = []
+    errors = []
+    mismatches = []
+    t0s = []
+    CVs = []
     ratios_L2M1 = []
     ratios_L2M0 = []
     ratios_L2M1_pro_retro = []
@@ -515,7 +582,11 @@ def main():
         kick_angles.append(np.arccos(np.dot(v_f / np.linalg.norm(v_f), [0, 0, 1])))
 
         thetas.append(data[simulation]["theta_flux"])
-
+        errors.append(data[simulation]['error'])
+        mismatches.append(data[simulation]['mismatch'])
+        t0s.append(data[simulation]['best t0'])
+        CVs.append(data[simulation]['best CV'])
+        
         ratios_L2M1.append(
             compute_ratio(data[simulation], (2, 1, 0, 1), (2, 2, 0, 1))[0]
         )
@@ -594,6 +665,10 @@ def main():
     chi_ps = np.array(chi_ps)
     kick_angles = np.array(kick_angles)
     thetas = np.array(thetas)
+    errors = np.array(errors)
+    mismatches = np.array(mismatches)
+    t0s = np.array(t0s)
+    CVs = np.array(CVs)
     ratios_L2M1 = np.array(ratios_L2M1)
     ratios_L2M0 = np.array(ratios_L2M0)
     ratios_L2M1_pro_retro = np.array(ratios_L2M1_pro_retro)
@@ -606,21 +681,23 @@ def main():
     pro_retro_ratios_L2M1 = np.array(pro_retro_ratios_L2M1)
     pro_retro_ratios_L2M0 = np.array(pro_retro_ratios_L2M0)
 
-    create_parameters_plot(qs, thetas, ratios_L2M1, kick_angles)
+    create_parameters_plot(qs, thetas, ratios_L2M1)
     create_mode_mixings_plot(
-        qs, thetas, ratios_L2M1_pro_retro, kick_angles, "_L2M1_pro_retro_kick_angles"
+        thetas, ratios_L2M1_pro_retro, kick_angles, "_L2M1_pro_retro_kick_angles"
     )
     create_mode_mixings_plot(
-        qs, thetas, ratios_L2M1_pro_retro_mirror, qs, "_L2M1_pro_retro_mirror_mass_ratio"
+        thetas, ratios_L2M1_pro_retro_mirror, qs, "_L2M1_pro_retro_mirror_mass_ratio"
     )
     create_mode_mixings_plot(
-        qs, thetas, ratios_L2M1_pro_retro_mirror, kick_angles, "_L2M1_pro_retro_mirror_kick_angles"
+        thetas, ratios_L2M1_pro_retro_mirror, kick_angles, "_L2M1_pro_retro_mirror_kick_angles"
     )
-    create_asymmetric_mode_mixings_plot(qs, thetas, ratios_L2M1, kick_angles, "_L2M1")
+    create_asymmetric_mode_mixings_plot(thetas, ratios_L2M1, kick_angles, "_L2M1")
     create_pro_retro_mixings_plot(
-        qs, thetas, pro_retro_ratios_L2M2, kick_angles, "_L2M2"
+        thetas, pro_retro_ratios_L2M2, kick_angles, "_L2M2"
     )
+    create_fit_plot(thetas, errors, qs, 'errors')
 
+    create_kick_plot(thetas, kick_angles, qs)
 
 if __name__ == "__main__":
     main()
