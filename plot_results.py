@@ -43,7 +43,7 @@ def create_parameters_plot(qs, thetas, ratios, inset_fig=True):
     fig, axis = plt.subplots(
         1,
         2,
-        figsize=(onecol_w_in, onecol_w_in * 0.65),
+        figsize=(onecol_w_in, onecol_w_in * 1.0),
         sharex=False,
         sharey=False,
         width_ratios=[1, 0.05],
@@ -66,7 +66,7 @@ def create_parameters_plot(qs, thetas, ratios, inset_fig=True):
 
     if inset_fig:
         im = plt.imread('CCEFigures/SpinMisalignmentCartoon.jpeg')
-        newax = fig.add_axes([0.5,0.15,0.315,0.315], anchor='NE', zorder=1)
+        newax = fig.add_axes([0.48,0.06,0.315,0.315], anchor='NE', zorder=1)
         newax.imshow(im)
         newax.get_xaxis().set_ticks([])
         newax.get_yaxis().set_ticks([])
@@ -78,7 +78,7 @@ def create_mode_mixings_plot(thetas, ratios, z_axis, name_suffix=""):
     fig, axis = plt.subplots(
         1,
         2,
-        figsize=(onecol_w_in, onecol_w_in * 0.65),
+        figsize=(onecol_w_in, onecol_w_in * 1.0),
         sharex=False,
         sharey=False,
         width_ratios=[1, 0.05],
@@ -153,21 +153,22 @@ def create_mode_mixings_plot(thetas, ratios, z_axis, name_suffix=""):
     plt.savefig(f"CCEFigures/mode_mixings{name_suffix}.pdf", bbox_inches="tight")
 
 
-# Figure 2 panel A
+# Figure 2
 def create_asymmetric_mode_mixings_plot(
-    thetas, ratios, kick_angles, name_suffix=""
+    thetas, ratios1, ratios2, kick_angles, name_suffix=""
 ):
     fig, axis = plt.subplots(
         1,
-        2,
-        figsize=(onecol_w_in, onecol_w_in * 0.65),
+        4,
+        figsize=(twocol_w_in, twocol_w_in * 0.45),
         sharex=False,
         sharey=False,
-        width_ratios=[1, 0.05],
+        width_ratios=[1, 0.28, 1, 0.05],
     )
-    plt.subplots_adjust(hspace=0.02, wspace=0.02)
+    plt.subplots_adjust(wspace=0.02)
+    axis[1].set_visible(False)
 
-    result = axis[0].scatter(thetas, ratios, c=kick_angles, s=4, cmap="rainbow")
+    result = axis[0].scatter(thetas, ratios1, c=kick_angles, s=4, cmap="rainbow")
 
     axis[0].set_yscale("log")
     axis[0].set_xlim(0 - 0.2, np.pi + 0.2)
@@ -189,8 +190,7 @@ def create_asymmetric_mode_mixings_plot(
         label=r"$\cfrac{\langle\phantom{}_{-2}Y_{(2,+1)}(\mathbf{R}),\phantom{}_{-2}Y_{(2,+2)}\rangle}{\langle\phantom{}_{-2}Y_{(2,+2)}(\mathbf{R}),\phantom{}_{-2}Y_{(2,+2)}\rangle}$",
     )
 
-    axis[0].set_ylim(ylim)
-    axis[0].set_ylim(top=2e2)
+    axis[0].set_ylim(bottom=1e-5, top=4e2)
 
     axis[0].set_xlabel(
         r"$\Delta\theta(\dot{J}^{t=\mathrm{peak}},\chi_{f}^{t=+\infty})$"
@@ -200,33 +200,11 @@ def create_asymmetric_mode_mixings_plot(
     axis[0].legend(loc="upper left", frameon=True, framealpha=1)
     axis[0].grid()
 
-    c = fig.colorbar(result, cax=axis[1], orientation="vertical", pad=0)
+    axis[2].scatter(thetas, ratios2, c=kick_angles, s=4, cmap="rainbow")
 
-    c.ax.get_yaxis().labelpad = 15
-    c.ax.set_ylabel(r"$\Delta\theta(v^{t=-\infty},v^{t=+\infty})$", rotation=270)
-
-    plt.savefig(
-        f"CCEFigures/asymmetric_mode_mixings{name_suffix}.pdf", bbox_inches="tight"
-    )
-
-
-# Figure 2 panel B, do we want this to have the same yaxis as above?
-def create_pro_retro_mixings_plot(thetas, ratios, kick_angles, name_suffix=""):
-    fig, axis = plt.subplots(
-        1,
-        2,
-        figsize=(onecol_w_in, onecol_w_in * 0.65),
-        sharex=False,
-        sharey=False,
-        width_ratios=[1, 0.05],
-    )
-    plt.subplots_adjust(hspace=0.02, wspace=0.02)
-
-    result = axis[0].scatter(thetas, ratios, c=kick_angles, s=4, cmap="rainbow")
-
-    axis[0].set_yscale("log")
-    axis[0].set_xlim(0 - 0.2, np.pi + 0.2)
-    ylim = axis[0].get_ylim()
+    axis[2].set_yscale("log")
+    axis[2].set_xlim(0 - 0.2, np.pi + 0.2)
+    ylim = axis[2].get_ylim()
 
     angles = np.linspace(0, np.pi - 0.01, 100)
     rotation_factors = np.array(
@@ -238,29 +216,28 @@ def create_pro_retro_mixings_plot(thetas, ratios, kick_angles, name_suffix=""):
     )
 
     # Change label to just be some WignerD notation that we define in methods?
-    axis[0].plot(
+    axis[2].plot(
         angles,
         rotation_factors,
         label=r"$\cfrac{\langle\phantom{}_{-2}Y_{(2,-2)}(\mathbf{R}),\phantom{}_{-2}Y_{(2,+2)}\rangle}{\langle\phantom{}_{-2}Y_{(2,+2)}(\mathbf{R}),\phantom{}_{-2}Y_{(2,+2)}\rangle}$",
     )
 
-    axis[0].set_ylim(ylim)
-    axis[0].set_ylim(top=8e3)
+    axis[2].set_ylim(bottom=1e-5, top=4e2)
 
-    axis[0].set_xlabel(
+    axis[2].set_xlabel(
         r"$\Delta\theta(\dot{J}^{t=\mathrm{peak}},\chi_{f}^{t=+\infty})$"
     )
-    axis[0].set_ylabel(r"$A_{(-,2,2,0)}/A_{(+,2,2,0)}$")
+    axis[2].set_ylabel(r"$A_{(-,2,2,0)}/A_{(+,2,2,0)}$")
 
-    axis[0].legend(loc="upper left", frameon=True, framealpha=1)
-    axis[0].grid()
+    axis[2].legend(loc="upper left", frameon=True, framealpha=1)
+    axis[2].grid()
 
-    c = fig.colorbar(result, cax=axis[1], orientation="vertical", pad=0)
+    c = fig.colorbar(result, cax=axis[3], orientation="vertical", pad=0)
 
     c.ax.get_yaxis().labelpad = 15
     c.ax.set_ylabel(r"$\Delta\theta(v^{t=-\infty},v^{t=+\infty})$", rotation=270)
 
-    plt.savefig(f"CCEFigures/pro_retro_mixings{name_suffix}.pdf", bbox_inches="tight")
+    plt.savefig(f"CCEFigures/asymmetric_mixings{name_suffix}.pdf", bbox_inches="tight")
 
 def create_fit_plot(thetas, vertical_axis, qs, name_suffix='errors'):
     fig, axis = plt.subplots(
@@ -697,10 +674,7 @@ def main():
     create_mode_mixings_plot(
         thetas, ratios_L2M1_pro_retro_mirror, kick_angles, "_L2M1_pro_retro_mirror_kick_angles"
     )
-    create_asymmetric_mode_mixings_plot(thetas, ratios_L2M1, kick_angles, "_L2M1")
-    create_pro_retro_mixings_plot(
-        thetas, pro_retro_ratios_L2M2, kick_angles, "_L2M2"
-    )
+    create_asymmetric_mode_mixings_plot(thetas, ratios_L2M1, pro_retro_ratios_L2M2, kick_angles)
     create_fit_plot(thetas, errors, qs, 'errors')
 
     create_kick_plot(thetas, kick_angles, qs)
