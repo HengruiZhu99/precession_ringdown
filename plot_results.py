@@ -39,7 +39,7 @@ def compute_rotation_factor(input_mode, output_mode, theta):
 
 
 # Figure 1 panel A
-def create_parameters_plot(qs, thetas, ratios, kick_angles, savefig = True, inset_fig = True, plt_show = False):
+def create_parameters_plot(qs, thetas, ratios, inset_fig=True):
     fig, axis = plt.subplots(
         1,
         2,
@@ -65,18 +65,13 @@ def create_parameters_plot(qs, thetas, ratios, kick_angles, savefig = True, inse
     )
 
     if inset_fig:
-        im = plt.imread('CCEFigures/SpinMisalignmentCartoon_jpeg.001.jpeg')
+        im = plt.imread('CCEFigures/SpinMisalignmentCartoon.jpeg')
         newax = fig.add_axes([0.5,0.15,0.315,0.315], anchor='NE', zorder=1)
         newax.imshow(im)
-        #newax.axis('off')
         newax.get_xaxis().set_ticks([])
         newax.get_yaxis().set_ticks([])
 
-    if savefig:
-        plt.savefig("CCEFigures/parameters.pdf", bbox_inches="tight")
-
-    if plt_show:
-        plt.show()
+    plt.savefig("CCEFigures/parameters.pdf", bbox_inches="tight")
 
 # Figure 1 panel B
 def create_mode_mixings_plot(thetas, ratios, z_axis, name_suffix=""):
