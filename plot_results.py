@@ -39,7 +39,7 @@ def compute_rotation_factor(input_mode, output_mode, theta):
 
 
 # Figure 1 panel A
-def create_parameters_plot(qs, thetas, ratios, kick_angles, savefig = True, inset_fig = True):
+def create_parameters_plot(qs, thetas, ratios, kick_angles, savefig = True, inset_fig = True, plt_show = False):
     fig, axis = plt.subplots(
         1,
         2,
@@ -75,7 +75,8 @@ def create_parameters_plot(qs, thetas, ratios, kick_angles, savefig = True, inse
     if savefig:
         plt.savefig("CCEFigures/parameters.pdf", bbox_inches="tight")
 
-    plt.show()
+    if pltshow:
+        plt.show()
 
 # Figure 1 panel B
 def create_mode_mixings_plot(thetas, ratios, z_axis, name_suffix=""):
