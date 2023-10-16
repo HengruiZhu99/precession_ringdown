@@ -75,7 +75,7 @@ def create_parameters_plot(qs, thetas, ratios, kick_angles, savefig = True, inse
     if savefig:
         plt.savefig("CCEFigures/parameters.pdf", bbox_inches="tight")
 
-    if pltshow:
+    if plt_show:
         plt.show()
 
 # Figure 1 panel B
