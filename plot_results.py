@@ -50,10 +50,10 @@ def create_parameters_plot(qs, thetas, ratios, inset_fig=True):
     )
     plt.subplots_adjust(hspace=0.02, wspace=0.02)
 
-    result = axis[0].scatter(thetas, qs, s=4, c=np.log10(ratios), cmap="rainbow")
+    result = axis[0].scatter(thetas, qs, s=4, c=np.log10(ratios), cmap="viridis")
 
     axis[0].set_xlabel(
-        r"$\Delta\theta(\dot{J}^{t=\mathrm{peak}},\chi_{f}^{t=+\infty})$"
+        r"$\theta$"
     )
     axis[0].set_ylabel(r"$q$")
 
@@ -66,7 +66,7 @@ def create_parameters_plot(qs, thetas, ratios, inset_fig=True):
 
     if inset_fig:
         im = plt.imread('CCEFigures/SpinMisalignmentCartoon.jpeg')
-        newax = fig.add_axes([0.48,0.06,0.315,0.315], anchor='NE', zorder=1)
+        newax = fig.add_axes([0.414,0.006,0.4,0.4], anchor='NE', zorder=1)
         newax.imshow(im)
         newax.get_xaxis().set_ticks([])
         newax.get_yaxis().set_ticks([])
@@ -85,7 +85,7 @@ def create_mode_mixings_plot(thetas, ratios, z_axis, name_suffix=""):
     )
     plt.subplots_adjust(hspace=0.02, wspace=0.02)
 
-    result = axis[0].scatter(thetas, ratios, c=z_axis, s=4, cmap="rainbow")
+    result = axis[0].scatter(thetas, ratios, c=z_axis, s=4, cmap="plasma")
 
     angles = np.linspace(0, np.pi - 0.01, 100)
     rotation_factors = np.array(
@@ -109,6 +109,10 @@ def create_mode_mixings_plot(thetas, ratios, z_axis, name_suffix=""):
         label=r"$\cfrac{\langle\phantom{}_{-2}Y_{(2,\pm1)}(\mathbf{R}),\phantom{}_{-2}Y_{(2,+2)}\rangle}{\langle\phantom{}_{-2}Y_{(2,\pm2)}(\mathbf{R}),\phantom{}_{-2}Y_{(2,+2)}\rangle}$",
     )
 
+    xlim = axis[0].get_xlim()
+    axis[0].plot(np.arange(-np.pi, 2*np.pi, 0.01), np.ones_like(np.arange(-np.pi, 2*np.pi, 0.01)), ls='--', color=colors[0], lw=1.4)
+    axis[0].set_xlim(xlim)
+
     x = 3.05
     y = 6.0e-1
     ell_offset = ScaledTranslation(x, y, axis[0].transScale)
@@ -131,7 +135,7 @@ def create_mode_mixings_plot(thetas, ratios, z_axis, name_suffix=""):
     axis[0].set_xlim(0 - 0.2, np.pi + 0.2)
 
     axis[0].set_xlabel(
-        r"$\Delta\theta(\dot{J}^{t=\mathrm{peak}},\chi_{f}^{t=+\infty})$"
+        r"$\theta$"
     )
     
     if not "mirror" in name_suffix:
@@ -140,13 +144,13 @@ def create_mode_mixings_plot(thetas, ratios, z_axis, name_suffix=""):
         axis[0].set_ylabel(r"$A_{(\pm,2,\pm1,0)}/A_{(\pm,2,\pm2,0)}$")
 
     axis[0].legend(loc="upper left", frameon=True, framealpha=1)
-    axis[0].grid()
+    axis[0].grid(alpha=0.4)
 
     c = fig.colorbar(result, cax=axis[1], orientation="vertical", pad=0)
 
     c.ax.get_yaxis().labelpad = 15
     if 'kick_angles' in name_suffix:
-        c.ax.set_ylabel(r"$\Delta\theta(v^{t=-\infty},v^{t=+\infty})$", rotation=270)
+        c.ax.set_ylabel(r"$\phi$", rotation=270)
     else:
         c.ax.set_ylabel(r"$q$", rotation=270)
 
@@ -168,7 +172,7 @@ def create_asymmetric_mode_mixings_plot(
     plt.subplots_adjust(wspace=0.02)
     axis[1].set_visible(False)
 
-    result = axis[0].scatter(thetas, ratios1, c=kick_angles, s=4, cmap="rainbow")
+    result = axis[0].scatter(thetas, ratios1, c=kick_angles, s=4, cmap="plasma")
 
     axis[0].set_yscale("log")
     axis[0].set_xlim(0 - 0.2, np.pi + 0.2)
@@ -193,14 +197,14 @@ def create_asymmetric_mode_mixings_plot(
     axis[0].set_ylim(bottom=1e-5, top=4e2)
 
     axis[0].set_xlabel(
-        r"$\Delta\theta(\dot{J}^{t=\mathrm{peak}},\chi_{f}^{t=+\infty})$"
+        r"$\theta$"
     )
     axis[0].set_ylabel(r"$A_{(+,2,1,0)}/A_{(+,2,2,0)}$")
 
     axis[0].legend(loc="upper left", frameon=True, framealpha=1)
-    axis[0].grid()
+    axis[0].grid(alpha=0.4)
 
-    axis[2].scatter(thetas, ratios2, c=kick_angles, s=4, cmap="rainbow")
+    axis[2].scatter(thetas, ratios2, c=kick_angles, s=4, cmap="plasma")
 
     axis[2].set_yscale("log")
     axis[2].set_xlim(0 - 0.2, np.pi + 0.2)
@@ -225,17 +229,17 @@ def create_asymmetric_mode_mixings_plot(
     axis[2].set_ylim(bottom=1e-5, top=4e2)
 
     axis[2].set_xlabel(
-        r"$\Delta\theta(\dot{J}^{t=\mathrm{peak}},\chi_{f}^{t=+\infty})$"
+        r"$\theta$"
     )
     axis[2].set_ylabel(r"$A_{(-,2,2,0)}/A_{(+,2,2,0)}$")
 
     axis[2].legend(loc="upper left", frameon=True, framealpha=1)
-    axis[2].grid()
+    axis[2].grid(alpha=0.4)
 
     c = fig.colorbar(result, cax=axis[3], orientation="vertical", pad=0)
 
     c.ax.get_yaxis().labelpad = 15
-    c.ax.set_ylabel(r"$\Delta\theta(v^{t=-\infty},v^{t=+\infty})$", rotation=270)
+    c.ax.set_ylabel(r"$\phi$", rotation=270)
 
     plt.savefig(f"CCEFigures/asymmetric_mixings{name_suffix}.pdf", bbox_inches="tight")
 
@@ -250,12 +254,12 @@ def create_fit_plot(thetas, vertical_axis, qs, name_suffix='errors'):
     )
     plt.subplots_adjust(hspace=0.02, wspace=0.02)
 
-    result = axis[0].scatter(thetas, vertical_axis, s=4, c=qs, cmap="rainbow")
+    result = axis[0].scatter(thetas, vertical_axis, s=4, c=qs, cmap="plasma")
     
     axis[0].set_yscale('log')
     
     axis[0].set_xlabel(
-        r"$\Delta\theta(\dot{J}^{t=\mathrm{peak}},\chi_{f}^{t=+\infty})$"
+        r"$\theta$"
     )
     if 'error' in name_suffix:
         axis[0].set_ylabel(r"relative error")
@@ -287,12 +291,12 @@ def create_kick_plot(thetas, kick_angles, qs):
     )
     plt.subplots_adjust(hspace=0.02, wspace=0.02)
 
-    result = axis[0].scatter(thetas, kick_angles, s=4, c=qs, cmap="rainbow")
+    result = axis[0].scatter(thetas, kick_angles, s=4, c=qs, cmap="plasma")
 
     axis[0].set_xlabel(
-        r"$\Delta\theta(\dot{J}^{t=\mathrm{peak}},\chi_{f}^{t=+\infty})$"
+        r"$\theta$"
     )
-    axis[0].set_ylabel(r"$\Delta\theta(v)$")
+    axis[0].set_ylabel(r"$\phi$")
 
     c = fig.colorbar(result, cax=axis[1], orientation="vertical", pad=2.5)
 
