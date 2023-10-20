@@ -163,6 +163,7 @@ def create_Figure2(
 
     axis["A panel"].set_yscale("log")
     axis["A panel"].set_xlim(0 - 0.2, np.pi + 0.2)
+    axis["A panel"].set_xticks([0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0])
     axis["A panel"].set_xticklabels([])
 
     angles = np.linspace(0, np.pi - 0.01, 100)
