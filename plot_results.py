@@ -151,7 +151,7 @@ def create_Figure2(
     thetas, ratios_L2M1, pro_retro_ratios_L2M2, kick_angles, name_suffix=""
 ):
     fig = plt.figure(
-        figsize=(onecol_w_in, onecol_w_in * 1.4),
+        figsize=(onecol_w_in, onecol_w_in * 1.8),
     )
     axis = fig.subplot_mosaic(
         mosaic=[["A panel", "C panel"], ["B panel", "C panel"]], width_ratios=[1, 0.05]
