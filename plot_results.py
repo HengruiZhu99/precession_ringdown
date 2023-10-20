@@ -70,6 +70,7 @@ def create_parameters_plot(qs, thetas, ratios, inset_fig=True):
         newax.imshow(im)
         newax.get_xaxis().set_ticks([])
         newax.get_yaxis().set_ticks([])
+        plt.setp(newax.spines.values(), color = 'lightgrey')
 
     plt.savefig("CCEFigures/parameters.pdf", bbox_inches="tight")
 
