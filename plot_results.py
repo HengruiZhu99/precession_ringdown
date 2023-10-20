@@ -72,6 +72,7 @@ def create_Figure1(qs, thetas, ratios, ratios_pro_retro, inset_fig=True):
         newax.imshow(im)
         newax.get_xaxis().set_ticks([])
         newax.get_yaxis().set_ticks([])
+        plt.setp(newax.spines.values(), color = 'lightgrey')
 
     # panel B
 
