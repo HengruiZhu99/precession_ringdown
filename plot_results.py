@@ -39,7 +39,7 @@ def compute_rotation_factor(input_mode, output_mode, theta):
 
 
 # Figure 1
-def create_Figure1(qs, thetas, ratios, ratios_pro_retro, inset_fig=True):
+def create_Figure1(qs, thetas, ratios_A, ratios_B, inset_fig=True, filename='Figure1.pdf'):
     fig, axis = plt.subplots(
         2,
         2,
@@ -52,7 +52,7 @@ def create_Figure1(qs, thetas, ratios, ratios_pro_retro, inset_fig=True):
 
     # panel A
 
-    result = axis[1][0].scatter(thetas, qs, s=8, c=np.log10(ratios), cmap="viridis")
+    result = axis[1][0].scatter(thetas, qs, s=8, c=np.log10(ratios_A), cmap="viridis")
 
     axis[1][0].set_xlabel(r"misalignment angle $\theta$", fontsize=12)
     axis[1][0].set_ylabel(r"mass ratio $q$", fontsize=12)
@@ -65,7 +65,7 @@ def create_Figure1(qs, thetas, ratios, ratios_pro_retro, inset_fig=True):
         fontsize=12,
         labelpad=-36,
     )
-
+    
     if inset_fig:
         im = plt.imread("CCEFigures/SpinMisalignmentCartoon.jpeg")
         newax = fig.add_axes([0.185, 0.145, 0.26, 0.26], anchor="NE", zorder=1)
@@ -76,7 +76,7 @@ def create_Figure1(qs, thetas, ratios, ratios_pro_retro, inset_fig=True):
 
     # panel B
 
-    result = axis[1][1].scatter(thetas, ratios_pro_retro, c=qs, s=8, cmap="magma")
+    result = axis[1][1].scatter(thetas, ratios_B, c=qs, s=8, cmap="magma")
 
     angles = np.linspace(0, np.pi - 0.01, 100)
     rotation_factors = np.array(
@@ -132,9 +132,8 @@ def create_Figure1(qs, thetas, ratios, ratios_pro_retro, inset_fig=True):
     axis[1][1].set_xticks([0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0])
 
     axis[1][1].set_xlabel(r"misalignment angle $\theta$", fontsize=12)
-
     axis[1][1].set_ylabel(r"$A_{(\pm,2,\pm1,0)}/A_{(\pm,2,\pm2,0)}$", fontsize=12)
-
+    
     axis[1][1].legend(loc="lower right", frameon=True, framealpha=1, fontsize=12)
 
     c2 = fig.colorbar(result, cax=axis[0][1], orientation="horizontal")
@@ -143,7 +142,7 @@ def create_Figure1(qs, thetas, ratios, ratios_pro_retro, inset_fig=True):
     c2.ax.xaxis.set_ticks_position("top")
     c2.ax.set_xlabel(r"mass ratio $q$", fontsize=12, labelpad=-36)
 
-    plt.savefig("CCEFigures/Figure1.pdf", bbox_inches="tight")
+    plt.savefig(f"CCEFigures/{filename}", bbox_inches="tight")
 
 
 # Figure 2
@@ -502,7 +501,7 @@ def main():
     pro_retro_ratios_L2M1 = np.array(pro_retro_ratios_L2M1)
     pro_retro_ratios_L2M0 = np.array(pro_retro_ratios_L2M0)
 
-    create_Figure1(qs, thetas, ratios_L2M1, ratios_L2M1_pro_retro)
+    create_Figure1(qs, thetas, ratios_L2M1, ratios_L2M1_pro_retro_mirror, filename='Figure1.pdf')
 
     create_Figure2(thetas, ratios_L2M1, pro_retro_ratios_L2M2, kick_angles)
 
