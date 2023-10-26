@@ -39,7 +39,9 @@ def compute_rotation_factor(input_mode, output_mode, theta):
 
 
 # Figure 1
-def create_Figure1(qs, thetas, ratios_A, ratios_B, inset_fig=True, filename='Figure1.pdf'):
+def create_Figure1(
+    qs, thetas, ratios_A, ratios_B, inset_fig=True, filename="Figure1.pdf"
+):
     fig, axis = plt.subplots(
         2,
         2,
@@ -57,6 +59,23 @@ def create_Figure1(qs, thetas, ratios_A, ratios_B, inset_fig=True, filename='Fig
     axis[1][0].set_xlabel(r"misalignment angle $\theta$", fontsize=12)
     axis[1][0].set_ylabel(r"mass ratio $q$", fontsize=12)
 
+    axis[1][0].set_xticks(
+        [
+            0.0,
+            np.pi / 8,
+            2 * np.pi / 8,
+            3 * np.pi / 8,
+            4 * np.pi / 8,
+            5 * np.pi / 8,
+            6 * np.pi / 8,
+            7 * np.pi / 8,
+            np.pi,
+        ]
+    )
+    axis[1][0].set_xticklabels(
+        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
+    )
+
     c1 = fig.colorbar(result, cax=axis[0][0], orientation="horizontal")
 
     c1.ax.xaxis.set_ticks_position("top")
@@ -65,20 +84,20 @@ def create_Figure1(qs, thetas, ratios_A, ratios_B, inset_fig=True, filename='Fig
         fontsize=12,
         labelpad=-36,
     )
-    
+
     if inset_fig:
         im = plt.imread("CCEFigures/SpinMisalignmentCartoon.jpeg")
         newax = fig.add_axes([0.185, 0.145, 0.26, 0.26], anchor="NE", zorder=1)
         newax.imshow(im)
         newax.get_xaxis().set_ticks([])
         newax.get_yaxis().set_ticks([])
-        plt.setp(newax.spines.values(), color = 'lightgrey')
+        plt.setp(newax.spines.values(), color="lightgrey")
 
     # panel B
 
     result = axis[1][1].scatter(thetas, ratios_B, c=qs, s=8, cmap="magma")
 
-    angles = np.linspace(0, np.pi - 0.01, 100)
+    angles = np.linspace(0, np.pi, 100)
     rotation_factors = np.array(
         [
             abs(
@@ -110,14 +129,14 @@ def create_Figure1(qs, thetas, ratios_A, ratios_B, inset_fig=True, filename='Fig
     axis[1][1].set_xlim(xlim)
 
     x = 3.05
-    y = 6.0e-1
+    y = 5.48e-1
     ell_offset = ScaledTranslation(x, y, axis[1][1].transScale)
     ell_tform = ell_offset + axis[1][1].transLimits + axis[1][1].transAxes
     axis[1][1].add_patch(
         Ellipse(
             xy=(0, 0),
             width=0.46,
-            height=0.52,
+            height=0.25,
             color=colors[0],
             fill=False,
             lw=1,
@@ -129,11 +148,26 @@ def create_Figure1(qs, thetas, ratios_A, ratios_B, inset_fig=True, filename='Fig
     axis[1][1].set_yscale("log")
     axis[1][1].set_xlim(0 - 0.2, np.pi + 0.2)
 
-    axis[1][1].set_xticks([0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0])
-
     axis[1][1].set_xlabel(r"misalignment angle $\theta$", fontsize=12)
     axis[1][1].set_ylabel(r"$A_{(\pm,2,\pm1,0)}/A_{(\pm,2,\pm2,0)}$", fontsize=12)
-    
+
+    axis[1][1].set_xticks(
+        [
+            0.0,
+            np.pi / 8,
+            2 * np.pi / 8,
+            3 * np.pi / 8,
+            4 * np.pi / 8,
+            5 * np.pi / 8,
+            6 * np.pi / 8,
+            7 * np.pi / 8,
+            np.pi,
+        ]
+    )
+    axis[1][1].set_xticklabels(
+        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
+    )
+
     axis[1][1].legend(loc="lower right", frameon=True, framealpha=1, fontsize=12)
 
     c2 = fig.colorbar(result, cax=axis[0][1], orientation="horizontal")
@@ -163,10 +197,23 @@ def create_Figure2(
 
     axis["A panel"].set_yscale("log")
     axis["A panel"].set_xlim(0 - 0.2, np.pi + 0.2)
-    axis["A panel"].set_xticks([0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0])
+
+    axis["A panel"].set_xticks(
+        [
+            0.0,
+            np.pi / 8,
+            2 * np.pi / 8,
+            3 * np.pi / 8,
+            4 * np.pi / 8,
+            5 * np.pi / 8,
+            6 * np.pi / 8,
+            7 * np.pi / 8,
+            np.pi,
+        ]
+    )
     axis["A panel"].set_xticklabels([])
 
-    angles = np.linspace(0, np.pi - 0.01, 100)
+    angles = np.linspace(0, np.pi, 100)
     rotation_factors = np.array(
         [
             abs(compute_rotation_factor((2, 2), (2, 1), angle))
@@ -185,7 +232,6 @@ def create_Figure2(
     axis["A panel"].set_ylabel(r"$A_{(+,2,1,0)}/A_{(+,2,2,0)}$", fontsize=12)
 
     axis["A panel"].legend(loc="lower right", frameon=True, framealpha=1, fontsize=12)
-    axis["A panel"].grid(alpha=0.2)
 
     axis["A panel"].set_ylim(bottom=6e-3, top=2e1)
 
@@ -195,9 +241,25 @@ def create_Figure2(
 
     axis["B panel"].set_yscale("log")
     axis["B panel"].set_xlim(0 - 0.2, np.pi + 0.2)
-    axis["B panel"].set_xticks([0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0])
 
-    angles = np.linspace(0, np.pi - 0.01, 100)
+    axis["B panel"].set_xticks(
+        [
+            0.0,
+            np.pi / 8,
+            2 * np.pi / 8,
+            3 * np.pi / 8,
+            4 * np.pi / 8,
+            5 * np.pi / 8,
+            6 * np.pi / 8,
+            7 * np.pi / 8,
+            np.pi,
+        ]
+    )
+    axis["B panel"].set_xticklabels(
+        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
+    )
+
+    angles = np.linspace(0, np.pi, 100)
     rotation_factors = np.array(
         [
             abs(compute_rotation_factor((2, 2), (2, -2), angle))
@@ -216,7 +278,6 @@ def create_Figure2(
     axis["B panel"].set_ylabel(r"$A_{(-,2,2,0)}/A_{(+,2,2,0)}$", fontsize=12)
 
     axis["B panel"].legend(loc="lower right", frameon=True, framealpha=1, fontsize=12)
-    axis["B panel"].grid(alpha=0.2)
 
     axis["B panel"].set_ylim(bottom=6e-6, top=2e3)
 
@@ -501,7 +562,9 @@ def main():
     pro_retro_ratios_L2M1 = np.array(pro_retro_ratios_L2M1)
     pro_retro_ratios_L2M0 = np.array(pro_retro_ratios_L2M0)
 
-    create_Figure1(qs, thetas, ratios_L2M1, ratios_L2M1_pro_retro_mirror, filename='Figure1.pdf')
+    create_Figure1(
+        qs, thetas, ratios_L2M1, ratios_L2M1_pro_retro_mirror, filename="Figure1.pdf"
+    )
 
     create_Figure2(thetas, ratios_L2M1, pro_retro_ratios_L2M2, kick_angles)
 
