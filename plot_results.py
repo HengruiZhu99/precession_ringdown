@@ -283,7 +283,7 @@ def create_Figure2(
 
     c = fig.colorbar(result, cax=axis["C panel"], orientation="vertical", pad=0)
 
-    c.ax.set_ylabel(r"kick angle $\phi$", rotation=270, labelpad=15, fontsize=12)
+    c.ax.set_ylabel(r"velocity angle $\phi$", rotation=270, labelpad=15, fontsize=12)
 
     plt.savefig(f"CCEFigures/Figure2.pdf", bbox_inches="tight")
 
