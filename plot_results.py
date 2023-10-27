@@ -95,7 +95,7 @@ def create_Figure1(
 
     # panel B
 
-    result = axis[1][1].scatter(thetas, ratios_B, c=qs, s=8, cmap="magma")
+    result = axis[1][1].scatter(thetas, ratios_B, c=qs, s=8, cmap="magma", vmax=8.5)
 
     angles = np.linspace(0, np.pi, 100)
     rotation_factors = np.array(
@@ -115,7 +115,7 @@ def create_Figure1(
     axis[1][1].plot(
         angles,
         rotation_factors,
-        label=r"$\cfrac{\phantom{}_{-2}Y_{(2,+1)}^{R,\pm}(\theta)}{\phantom{}_{-2}Y_{(2,+2)}^{R,\pm}(\theta)}$",
+        label=r"$\cfrac{\mathfrak{D}_{1,2}^{(2)},\pm}{\mathfrak{D}_{2,2}^{(2),\pm}}$",
     )
 
     xlim = axis[1][1].get_xlim()
@@ -172,6 +172,7 @@ def create_Figure1(
 
     c2 = fig.colorbar(result, cax=axis[0][1], orientation="horizontal")
 
+    c2.ax.set_xlim(1, 8)
     c2.ax.xaxis.set_ticks([1, 2, 3, 4, 5, 6, 7, 8])
     c2.ax.xaxis.set_ticks_position("top")
     c2.ax.set_xlabel(r"mass ratio $q$", fontsize=12, labelpad=-36)
@@ -183,22 +184,17 @@ def create_Figure1(
 def create_Figure2(
     thetas, ratios_L2M1, pro_retro_ratios_L2M2, kick_angles, name_suffix=""
 ):
-    fig = plt.figure(
-        figsize=(onecol_w_in, onecol_w_in * 1.8),
-    )
-    axis = fig.subplot_mosaic(
-        mosaic=[["A panel", "C panel"], ["B panel", "C panel"]], width_ratios=[1, 0.05]
+    fig, axis = plt.subplots(
+        3, 1, figsize=(onecol_w_in, onecol_w_in * 1.4), height_ratios=[0.05, 1, 1]
     )
     plt.subplots_adjust(hspace=0.02, wspace=0.02)
 
-    result = axis["A panel"].scatter(
-        thetas, ratios_L2M1, c=kick_angles, s=8, cmap="coolwarm"
-    )
+    result = axis[1].scatter(thetas, ratios_L2M1, c=kick_angles, s=8, cmap="coolwarm")
 
-    axis["A panel"].set_yscale("log")
-    axis["A panel"].set_xlim(0 - 0.2, np.pi + 0.2)
+    axis[1].set_yscale("log")
+    axis[1].set_xlim(0 - 0.2, np.pi + 0.2)
 
-    axis["A panel"].set_xticks(
+    axis[1].set_xticks(
         [
             0.0,
             np.pi / 8,
@@ -211,7 +207,7 @@ def create_Figure2(
             np.pi,
         ]
     )
-    axis["A panel"].set_xticklabels([])
+    axis[1].set_xticklabels([])
 
     angles = np.linspace(0, np.pi, 100)
     rotation_factors = np.array(
@@ -223,26 +219,24 @@ def create_Figure2(
     )
 
     # Change label to just be some WignerD notation that we define in methods?
-    axis["A panel"].plot(
+    axis[1].plot(
         angles,
         rotation_factors,
-        label=r"$\cfrac{\phantom{}_{-2}Y_{(2,+1)}^{R}(\theta)}{\phantom{}_{-2}Y_{(2,+2)}^{R}(\theta)}$",
+        label=r"$\cfrac{\mathfrak{D}_{1,2}^{(2)}}{\mathfrak{D}_{2,2}^{(2)}}$",
     )
 
-    axis["A panel"].set_ylabel(r"$A_{(+,2,1,0)}/A_{(+,2,2,0)}$", fontsize=12)
+    axis[1].set_ylabel(r"$A_{(+,2,1,0)}/A_{(+,2,2,0)}$", fontsize=12)
 
-    axis["A panel"].legend(loc="lower right", frameon=True, framealpha=1, fontsize=12)
+    axis[1].legend(loc="lower right", frameon=True, framealpha=1, fontsize=12)
 
-    axis["A panel"].set_ylim(bottom=6e-3, top=2e1)
+    axis[1].set_ylim(bottom=6e-3, top=2e1)
 
-    axis["B panel"].scatter(
-        thetas, pro_retro_ratios_L2M2, c=kick_angles, s=8, cmap="coolwarm"
-    )
+    axis[2].scatter(thetas, pro_retro_ratios_L2M2, c=kick_angles, s=8, cmap="coolwarm")
 
-    axis["B panel"].set_yscale("log")
-    axis["B panel"].set_xlim(0 - 0.2, np.pi + 0.2)
+    axis[2].set_yscale("log")
+    axis[2].set_xlim(0 - 0.2, np.pi + 0.2)
 
-    axis["B panel"].set_xticks(
+    axis[2].set_xticks(
         [
             0.0,
             np.pi / 8,
@@ -255,7 +249,7 @@ def create_Figure2(
             np.pi,
         ]
     )
-    axis["B panel"].set_xticklabels(
+    axis[2].set_xticklabels(
         [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
     )
 
@@ -268,22 +262,23 @@ def create_Figure2(
         ]
     )
 
-    axis["B panel"].plot(
+    axis[2].plot(
         angles,
         rotation_factors,
-        label=r"$\cfrac{\phantom{}_{-2}Y_{(2,-2)}^{R}(\theta)}{\phantom{}_{-2}Y_{(2,+2)}^{R}(\theta)}$",
+        label=r"$\cfrac{\mathfrak{D}_{-2,2}^{(2)}}{\mathfrak{D}_{2,2}^{(2)}}$",
     )
 
-    axis["B panel"].set_xlabel(r"misalignment angle $\theta$", fontsize=12)
-    axis["B panel"].set_ylabel(r"$A_{(-,2,2,0)}/A_{(+,2,2,0)}$", fontsize=12)
+    axis[2].set_xlabel(r"misalignment angle $\theta$", fontsize=12)
+    axis[2].set_ylabel(r"$A_{(-,2,2,0)}/A_{(+,2,2,0)}$", fontsize=12)
 
-    axis["B panel"].legend(loc="lower right", frameon=True, framealpha=1, fontsize=12)
+    axis[2].legend(loc="lower right", frameon=True, framealpha=1, fontsize=12)
 
-    axis["B panel"].set_ylim(bottom=6e-6, top=2e3)
+    axis[2].set_ylim(bottom=6e-6, top=2e3)
 
-    c = fig.colorbar(result, cax=axis["C panel"], orientation="vertical", pad=0)
+    c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
 
-    c.ax.set_ylabel(r"velocity angle $\phi$", rotation=270, labelpad=15, fontsize=12)
+    c.ax.xaxis.set_ticks_position("top")
+    c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=12, labelpad=-30)
 
     plt.savefig(f"CCEFigures/Figure2.pdf", bbox_inches="tight")
 
