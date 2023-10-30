@@ -66,57 +66,69 @@ def compute_rotation_factor(input_mode, output_mode, theta):
     return sf.Wigner_D_element(R, input_mode[0], output_mode[1], input_mode[1])
 
 
-# Figure 1 panel A
-def create_parameters_plot(qs, thetas, ratios, inset_fig=True):
+# Figure 1
+def create_Figure1(
+    qs, thetas, ratios_A, ratios_B, inset_fig=True, filename="Figure1.pdf"
+):
     fig, axis = plt.subplots(
-        1,
         2,
-        figsize=(onecol_w_in, onecol_w_in * 1.0),
+        2,
+        figsize=(twocol_w_in, twocol_w_in * 0.45),
         sharex=False,
         sharey=False,
-        width_ratios=[1, 0.05],
+        height_ratios=[0.05, 1],
     )
-    plt.subplots_adjust(hspace=0.02, wspace=0.02)
+    plt.subplots_adjust(hspace=0.02, wspace=0.3)
 
-    result = axis[0].scatter(thetas, qs, s=4, c=np.log10(ratios), cmap="viridis")
+    # panel A
 
-    axis[0].set_xlabel(
-        r"$\theta$"
+    result = axis[1][0].scatter(thetas, qs, s=8, c=np.log10(ratios_A), cmap="viridis")
+
+    axis[1][0].set_xlabel(r"misalignment angle $\theta$", fontsize=12)
+    axis[1][0].set_ylabel(r"mass ratio $q$", fontsize=12)
+
+    axis[1][0].set_xticks(
+        [
+            0.0,
+            np.pi / 8,
+            2 * np.pi / 8,
+            3 * np.pi / 8,
+            4 * np.pi / 8,
+            5 * np.pi / 8,
+            6 * np.pi / 8,
+            7 * np.pi / 8,
+            np.pi,
+        ]
     )
-    axis[0].set_ylabel(r"$q$")
+    axis[1][0].set_xticklabels(
+        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
+    )
 
-    c = fig.colorbar(result, cax=axis[1], orientation="vertical", pad=2.5)
+    c1 = fig.colorbar(result, cax=axis[0][0], orientation="horizontal")
 
-    c.ax.get_yaxis().labelpad = 15
-    c.ax.set_ylabel(
-        r"$\log_{10}\left(A_{(+,2,1,0)}/A_{(+,2,2,0)}\right)$", rotation=270, fontsize=6
+    c1.ax.xaxis.set_ticks_position("top")
+    c1.ax.set_xlabel(
+        r"$\log_{10}\left(A_{(+,2,1,0)}/A_{(+,2,2,0)}\right)$",
+        fontsize=12,
+        labelpad=-36,
     )
 
     if inset_fig:
-        im = plt.imread('CCEFigures/SpinMisalignmentCartoon.jpeg')
-        newax = fig.add_axes([0.414,0.006,0.4,0.4], anchor='NE', zorder=1)
+        im = plt.imread("CCEFigures/SpinMisalignmentCartoon.jpeg")
+        newax = fig.add_axes([0.185, 0.145, 0.26, 0.26], anchor="NE", zorder=1)
         newax.imshow(im)
         newax.get_xaxis().set_ticks([])
         newax.get_yaxis().set_ticks([])
+        asymmetry_plot
         plt.setp(newax.spines.values(), color = 'lightgrey')
+        
+        main
 
-    plt.savefig("CCEFigures/parameters.pdf", bbox_inches="tight")
+    # panel B
 
-# Figure 1 panel B
-def create_mode_mixings_plot(thetas, ratios, z_axis, name_suffix=""):
-    fig, axis = plt.subplots(
-        1,
-        2,
-        figsize=(onecol_w_in, onecol_w_in * 1.0),
-        sharex=False,
-        sharey=False,
-        width_ratios=[1, 0.05],
-    )
-    plt.subplots_adjust(hspace=0.02, wspace=0.02)
+    result = axis[1][1].scatter(thetas, ratios_B, c=qs, s=8, cmap="magma", vmax=8.5)
 
-    result = axis[0].scatter(thetas, ratios, c=z_axis, s=4, cmap="plasma")
-
-    angles = np.linspace(0, np.pi - 0.01, 100)
+    angles = np.linspace(0, np.pi, 100)
     rotation_factors = np.array(
         [
             abs(
@@ -131,26 +143,31 @@ def create_mode_mixings_plot(thetas, ratios, z_axis, name_suffix=""):
         ]
     )
 
-    # Change label to just be some WignerD notation that we define in methods?
-    axis[0].plot(
+    axis[1][1].plot(
         angles,
         rotation_factors,
-        label=r"$\cfrac{\langle\phantom{}_{-2}Y_{(2,\pm1)}(\mathbf{R}),\phantom{}_{-2}Y_{(2,+2)}\rangle}{\langle\phantom{}_{-2}Y_{(2,\pm2)}(\mathbf{R}),\phantom{}_{-2}Y_{(2,+2)}\rangle}$",
+        label=r"$\cfrac{\mathfrak{D}_{1,2}^{(2)},\pm}{\mathfrak{D}_{2,2}^{(2),\pm}}$",
     )
 
-    xlim = axis[0].get_xlim()
-    axis[0].plot(np.arange(-np.pi, 2*np.pi, 0.01), np.ones_like(np.arange(-np.pi, 2*np.pi, 0.01)), ls='--', color=colors[0], lw=1.4)
-    axis[0].set_xlim(xlim)
+    xlim = axis[1][1].get_xlim()
+    axis[1][1].plot(
+        np.arange(-np.pi, 2 * np.pi, 0.01),
+        np.ones_like(np.arange(-np.pi, 2 * np.pi, 0.01)),
+        ls="--",
+        color=colors[0],
+        lw=1.4,
+    )
+    axis[1][1].set_xlim(xlim)
 
     x = 3.05
-    y = 6.0e-1
-    ell_offset = ScaledTranslation(x, y, axis[0].transScale)
-    ell_tform = ell_offset + axis[0].transLimits + axis[0].transAxes
-    axis[0].add_patch(
+    y = 5.48e-1
+    ell_offset = ScaledTranslation(x, y, axis[1][1].transScale)
+    ell_tform = ell_offset + axis[1][1].transLimits + axis[1][1].transAxes
+    axis[1][1].add_patch(
         Ellipse(
             xy=(0, 0),
-            width=0.4,
-            height=0.68,
+            width=0.46,
+            height=0.25,
             color=colors[0],
             fill=False,
             lw=1,
@@ -159,55 +176,71 @@ def create_mode_mixings_plot(thetas, ratios, z_axis, name_suffix=""):
         )
     )
 
-    axis[0].set_yscale("log")
-    axis[0].set_ylim(top=6e1)
-    axis[0].set_xlim(0 - 0.2, np.pi + 0.2)
+    axis[1][1].set_yscale("log")
+    axis[1][1].set_xlim(0 - 0.2, np.pi + 0.2)
 
-    axis[0].set_xlabel(
-        r"$\theta$"
+    axis[1][1].set_xlabel(r"misalignment angle $\theta$", fontsize=12)
+    axis[1][1].set_ylabel(r"$A_{(\pm,2,\pm1,0)}/A_{(\pm,2,\pm2,0)}$", fontsize=12)
+
+    axis[1][1].set_xticks(
+        [
+            0.0,
+            np.pi / 8,
+            2 * np.pi / 8,
+            3 * np.pi / 8,
+            4 * np.pi / 8,
+            5 * np.pi / 8,
+            6 * np.pi / 8,
+            7 * np.pi / 8,
+            np.pi,
+        ]
     )
-    
-    if not "mirror" in name_suffix:
-        axis[0].set_ylabel(r"$A_{(\pm,2,1,0)}/A_{(\pm,2,2,0)}$")
-    else:
-        axis[0].set_ylabel(r"$A_{(\pm,2,\pm1,0)}/A_{(\pm,2,\pm2,0)}$")
+    axis[1][1].set_xticklabels(
+        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
+    )
 
-    axis[0].legend(loc="upper left", frameon=True, framealpha=1)
-    axis[0].grid(alpha=0.4)
+    axis[1][1].legend(loc="lower right", frameon=True, framealpha=1, fontsize=12)
 
-    c = fig.colorbar(result, cax=axis[1], orientation="vertical", pad=0)
+    c2 = fig.colorbar(result, cax=axis[0][1], orientation="horizontal")
 
-    c.ax.get_yaxis().labelpad = 15
-    if 'kick_angles' in name_suffix:
-        c.ax.set_ylabel(r"$\phi$", rotation=270)
-    else:
-        c.ax.set_ylabel(r"$q$", rotation=270)
+    c2.ax.set_xlim(1, 8)
+    c2.ax.xaxis.set_ticks([1, 2, 3, 4, 5, 6, 7, 8])
+    c2.ax.xaxis.set_ticks_position("top")
+    c2.ax.set_xlabel(r"mass ratio $q$", fontsize=12, labelpad=-36)
 
-    plt.savefig(f"CCEFigures/mode_mixings{name_suffix}.pdf", bbox_inches="tight")
+    plt.savefig(f"CCEFigures/{filename}", bbox_inches="tight")
 
 
 # Figure 2
-def create_asymmetric_mode_mixings_plot(
-    thetas, ratios1, ratios2, kick_angles, name_suffix=""
+def create_Figure2(
+    thetas, ratios_L2M1, pro_retro_ratios_L2M2, kick_angles, name_suffix=""
 ):
     fig, axis = plt.subplots(
-        1,
-        4,
-        figsize=(twocol_w_in, twocol_w_in * 0.45),
-        sharex=False,
-        sharey=False,
-        width_ratios=[1, 0.28, 1, 0.05],
+        3, 1, figsize=(onecol_w_in, onecol_w_in * 1.4), height_ratios=[0.05, 1, 1]
     )
-    plt.subplots_adjust(wspace=0.02)
-    axis[1].set_visible(False)
+    plt.subplots_adjust(hspace=0.02, wspace=0.02)
 
-    result = axis[0].scatter(thetas, ratios1, c=kick_angles, s=4, cmap="plasma")
+    result = axis[1].scatter(thetas, ratios_L2M1, c=kick_angles, s=8, cmap="coolwarm")
 
-    axis[0].set_yscale("log")
-    axis[0].set_xlim(0 - 0.2, np.pi + 0.2)
-    ylim = axis[0].get_ylim()
+    axis[1].set_yscale("log")
+    axis[1].set_xlim(0 - 0.2, np.pi + 0.2)
 
-    angles = np.linspace(0, np.pi - 0.01, 100)
+    axis[1].set_xticks(
+        [
+            0.0,
+            np.pi / 8,
+            2 * np.pi / 8,
+            3 * np.pi / 8,
+            4 * np.pi / 8,
+            5 * np.pi / 8,
+            6 * np.pi / 8,
+            7 * np.pi / 8,
+            np.pi,
+        ]
+    )
+    axis[1].set_xticklabels([])
+
+    angles = np.linspace(0, np.pi, 100)
     rotation_factors = np.array(
         [
             abs(compute_rotation_factor((2, 2), (2, 1), angle))
@@ -217,29 +250,41 @@ def create_asymmetric_mode_mixings_plot(
     )
 
     # Change label to just be some WignerD notation that we define in methods?
-    axis[0].plot(
+    axis[1].plot(
         angles,
         rotation_factors,
-        label=r"$\cfrac{\langle\phantom{}_{-2}Y_{(2,+1)}(\mathbf{R}),\phantom{}_{-2}Y_{(2,+2)}\rangle}{\langle\phantom{}_{-2}Y_{(2,+2)}(\mathbf{R}),\phantom{}_{-2}Y_{(2,+2)}\rangle}$",
+        label=r"$\cfrac{\mathfrak{D}_{1,2}^{(2)}}{\mathfrak{D}_{2,2}^{(2)}}$",
     )
 
-    axis[0].set_ylim(bottom=1e-5, top=4e2)
+    axis[1].set_ylabel(r"$A_{(+,2,1,0)}/A_{(+,2,2,0)}$", fontsize=12)
 
-    axis[0].set_xlabel(
-        r"$\theta$"
-    )
-    axis[0].set_ylabel(r"$A_{(+,2,1,0)}/A_{(+,2,2,0)}$")
+    axis[1].legend(loc="lower right", frameon=True, framealpha=1, fontsize=12)
 
-    axis[0].legend(loc="upper left", frameon=True, framealpha=1)
-    axis[0].grid(alpha=0.4)
+    axis[1].set_ylim(bottom=6e-3, top=2e1)
 
-    axis[2].scatter(thetas, ratios2, c=kick_angles, s=4, cmap="plasma")
+    axis[2].scatter(thetas, pro_retro_ratios_L2M2, c=kick_angles, s=8, cmap="coolwarm")
 
     axis[2].set_yscale("log")
     axis[2].set_xlim(0 - 0.2, np.pi + 0.2)
-    ylim = axis[2].get_ylim()
 
-    angles = np.linspace(0, np.pi - 0.01, 100)
+    axis[2].set_xticks(
+        [
+            0.0,
+            np.pi / 8,
+            2 * np.pi / 8,
+            3 * np.pi / 8,
+            4 * np.pi / 8,
+            5 * np.pi / 8,
+            6 * np.pi / 8,
+            7 * np.pi / 8,
+            np.pi,
+        ]
+    )
+    axis[2].set_xticklabels(
+        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
+    )
+
+    angles = np.linspace(0, np.pi, 100)
     rotation_factors = np.array(
         [
             abs(compute_rotation_factor((2, 2), (2, -2), angle))
@@ -248,130 +293,45 @@ def create_asymmetric_mode_mixings_plot(
         ]
     )
 
-    # Change label to just be some WignerD notation that we define in methods?
     axis[2].plot(
         angles,
         rotation_factors,
-        label=r"$\cfrac{\langle\phantom{}_{-2}Y_{(2,-2)}(\mathbf{R}),\phantom{}_{-2}Y_{(2,+2)}\rangle}{\langle\phantom{}_{-2}Y_{(2,+2)}(\mathbf{R}),\phantom{}_{-2}Y_{(2,+2)}\rangle}$",
+        label=r"$\cfrac{\mathfrak{D}_{-2,2}^{(2)}}{\mathfrak{D}_{2,2}^{(2)}}$",
     )
 
-    axis[2].set_ylim(bottom=1e-5, top=4e2)
+    axis[2].set_xlabel(r"misalignment angle $\theta$", fontsize=12)
+    axis[2].set_ylabel(r"$A_{(-,2,2,0)}/A_{(+,2,2,0)}$", fontsize=12)
 
-    axis[2].set_xlabel(
-        r"$\theta$"
-    )
-    axis[2].set_ylabel(r"$A_{(-,2,2,0)}/A_{(+,2,2,0)}$")
+    axis[2].legend(loc="lower right", frameon=True, framealpha=1, fontsize=12)
 
-    axis[2].legend(loc="upper left", frameon=True, framealpha=1)
-    axis[2].grid(alpha=0.4)
+    axis[2].set_ylim(bottom=6e-6, top=2e3)
 
-    c = fig.colorbar(result, cax=axis[3], orientation="vertical", pad=0)
+    c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
 
-    c.ax.get_yaxis().labelpad = 15
-    c.ax.set_ylabel(r"$\phi$", rotation=270)
+    c.ax.xaxis.set_ticks_position("top")
+    c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=12, labelpad=-30)
 
-    plt.savefig(f"CCEFigures/asymmetric_mixings{name_suffix}.pdf", bbox_inches="tight")
+    plt.savefig(f"CCEFigures/Figure2.pdf", bbox_inches="tight")
 
-def create_fit_plot(thetas, vertical_axis, qs, name_suffix='errors'):
-    fig, axis = plt.subplots(
-        1,
-        2,
-        figsize=(onecol_w_in, onecol_w_in * 0.65),
-        sharex=False,
-        sharey=False,
-        width_ratios=[1, 0.05],
-    )
-    plt.subplots_adjust(hspace=0.02, wspace=0.02)
-
-    result = axis[0].scatter(thetas, vertical_axis, s=4, c=qs, cmap="plasma")
-    
-    axis[0].set_yscale('log')
-    
-    axis[0].set_xlabel(
-        r"$\theta$"
-    )
-    if 'error' in name_suffix:
-        axis[0].set_ylabel(r"relative error")
-    elif 'mismatch' in name_suffix:
-        axis[0].set_ylabel(r"$\mathrm{Mismatch}\,\mathcal{M}$")
-    elif 't0' in name_suffix:
-        axis[0].set_ylabel(r"$t_{0}$")
-    elif 'CV' in name_suffix:
-        axis[0].set_ylabel(r"Coefficient of Variation")
-
-    c = fig.colorbar(result, cax=axis[1], orientation="vertical", pad=2.5)
-
-    c.ax.get_yaxis().labelpad = 15
-    c.ax.set_ylabel(
-        r"$q$", rotation=270, fontsize=6
-    )
-
-    plt.savefig(f"CCEFigures/{name_suffix}.pdf", bbox_inches="tight")
-    
-
-def create_kick_plot(thetas, kick_angles, qs):
-    fig, axis = plt.subplots(
-        1,
-        2,
-        figsize=(onecol_w_in, onecol_w_in * 0.65),
-        sharex=False,
-        sharey=False,
-        width_ratios=[1, 0.05],
-    )
-    plt.subplots_adjust(hspace=0.02, wspace=0.02)
-
-    result = axis[0].scatter(thetas, kick_angles, s=4, c=qs, cmap="plasma")
-
-    axis[0].set_xlabel(
-        r"$\theta$"
-    )
-    axis[0].set_ylabel(r"$\phi$")
-
-    c = fig.colorbar(result, cax=axis[1], orientation="vertical", pad=2.5)
-
-    c.ax.get_yaxis().labelpad = 15
-    c.ax.set_ylabel(
-        r"$q$", rotation=270, fontsize=6
-    )
-
-    plt.savefig("CCEFigures/kick.pdf", bbox_inches="tight")
 
 def compute_mode_amplitude(data, mode, pro_retro=False, mirror=False):
     L, M, N, S = mode
     if pro_retro and not mirror:
         # prograde
         A_mode_pro = (
-            data[str((L, M, N, S)).replace(" ", "")]["A"][
-                0
-            ]
-            + 1j
-            * data[str((L, M, N, S)).replace(" ", "")][
-                "A"
-            ][1]
+            data[str((L, M, N, S)).replace(" ", "")]["A"][0]
+            + 1j * data[str((L, M, N, S)).replace(" ", "")]["A"][1]
         )
-        A_mode_pro_std_re = data[
-            str((L, M, N, S)).replace(" ", "")
-        ]["A_std"][0]
-        A_mode_pro_std_im = data[
-            str((L, M, N, S)).replace(" ", "")
-        ]["A_std"][1]
+        A_mode_pro_std_re = data[str((L, M, N, S)).replace(" ", "")]["A_std"][0]
+        A_mode_pro_std_im = data[str((L, M, N, S)).replace(" ", "")]["A_std"][1]
 
         # retrograde
         A_mode_retro = (
-            data[str((L, M, N, -S)).replace(" ", "")][
-                "A"
-            ][0]
-            + 1j
-            * data[str((L, M, N, -S)).replace(" ", "")][
-                "A"
-            ][1]
+            data[str((L, M, N, -S)).replace(" ", "")]["A"][0]
+            + 1j * data[str((L, M, N, -S)).replace(" ", "")]["A"][1]
         )
-        A_mode_retro_std_re = data[
-            str((L, M, N, -S)).replace(" ", "")
-        ]["A_std"][0]
-        A_mode_retro_std_im = data[
-            str((L, M, N, -S)).replace(" ", "")
-        ]["A_std"][1]
+        A_mode_retro_std_re = data[str((L, M, N, -S)).replace(" ", "")]["A_std"][0]
+        A_mode_retro_std_im = data[str((L, M, N, -S)).replace(" ", "")]["A_std"][1]
 
         return abs(A_mode_pro + A_mode_retro), np.sqrt(
             (A_mode_pro_std_re**2 + A_mode_retro_std_re**2)
@@ -380,43 +340,21 @@ def compute_mode_amplitude(data, mode, pro_retro=False, mirror=False):
     elif not pro_retro and mirror:
         # positive M
         A_mode_pM = abs(
-            data[str((L, M, N, S)).replace(" ", "")]["A"][
-                0
-            ]
-            + 1j
-            * data[str((L, M, N, S)).replace(" ", "")][
-                "A"
-            ][1]
+            data[str((L, M, N, S)).replace(" ", "")]["A"][0]
+            + 1j * data[str((L, M, N, S)).replace(" ", "")]["A"][1]
         )
         A_mode_pM_std = np.sqrt(
-            data[str((L, M, N, S)).replace(" ", "")][
-                "A_std"
-            ][0]
-            ** 2
-            + data[str((L, M, N, S)).replace(" ", "")][
-                "A_std"
-            ][1]
-            ** 2
+            data[str((L, M, N, S)).replace(" ", "")]["A_std"][0] ** 2
+            + data[str((L, M, N, S)).replace(" ", "")]["A_std"][1] ** 2
         )
 
         A_mode_nM = abs(
-            data[str((L, -M, N, -S)).replace(" ", "")][
-                "A"
-            ][0]
-            + 1j
-            * data[str((L, -M, N, -S)).replace(" ", "")][
-                "A"
-            ][1]
+            data[str((L, -M, N, -S)).replace(" ", "")]["A"][0]
+            + 1j * data[str((L, -M, N, -S)).replace(" ", "")]["A"][1]
         )
         A_mode_nM_std = np.sqrt(
-            data[str((L, -M, N, -S)).replace(" ", "")][
-                "A_std"
-            ][0]
-            ** 2
-            + data[str((L, -M, N, -S)).replace(" ", "")][
-                "A_std"
-            ][1]
-            ** 2
+            data[str((L, -M, N, -S)).replace(" ", "")]["A_std"][0] ** 2
+            + data[str((L, -M, N, -S)).replace(" ", "")]["A_std"][1] ** 2
         )
 
         Q_sum = np.sqrt(A_mode_pM**2 + A_mode_nM**2)
@@ -427,71 +365,35 @@ def compute_mode_amplitude(data, mode, pro_retro=False, mirror=False):
     elif pro_retro and mirror:
         # prograde positive M
         A_mode_pro_pM = (
-            data[str((L, M, N, S)).replace(" ", "")]["A"][
-                0
-            ]
-            + 1j
-            * data[str((L, M, N, S)).replace(" ", "")][
-                "A"
-            ][1]
+            data[str((L, M, N, S)).replace(" ", "")]["A"][0]
+            + 1j * data[str((L, M, N, S)).replace(" ", "")]["A"][1]
         )
-        A_mode_pro_pM_std_re = data[
-            str((L, M, N, S)).replace(" ", "")
-        ]["A_std"][0]
-        A_mode_pro_pM_std_im = data[
-            str((L, M, N, S)).replace(" ", "")
-        ]["A_std"][1]
+        A_mode_pro_pM_std_re = data[str((L, M, N, S)).replace(" ", "")]["A_std"][0]
+        A_mode_pro_pM_std_im = data[str((L, M, N, S)).replace(" ", "")]["A_std"][1]
 
         # retrograde positive M
         A_mode_retro_pM = (
-            data[str((L, M, N, -S)).replace(" ", "")][
-                "A"
-            ][0]
-            + 1j
-            * data[str((L, M, N, -S)).replace(" ", "")][
-                "A"
-            ][1]
+            data[str((L, M, N, -S)).replace(" ", "")]["A"][0]
+            + 1j * data[str((L, M, N, -S)).replace(" ", "")]["A"][1]
         )
-        A_mode_retro_pM_std_re = data[
-            str((L, M, N, -S)).replace(" ", "")
-        ]["A_std"][0]
-        A_mode_retro_pM_std_im = data[
-            str((L, M, N, -S)).replace(" ", "")
-        ]["A_std"][1]
+        A_mode_retro_pM_std_re = data[str((L, M, N, -S)).replace(" ", "")]["A_std"][0]
+        A_mode_retro_pM_std_im = data[str((L, M, N, -S)).replace(" ", "")]["A_std"][1]
 
         # prograde negative M
         A_mode_pro_nM = (
-            data[str((L, -M, N, -S)).replace(" ", "")][
-                "A"
-            ][0]
-            + 1j
-            * data[str((L, -M, N, -S)).replace(" ", "")][
-                "A"
-            ][1]
+            data[str((L, -M, N, -S)).replace(" ", "")]["A"][0]
+            + 1j * data[str((L, -M, N, -S)).replace(" ", "")]["A"][1]
         )
-        A_mode_pro_nM_std_re = data[
-            str((L, -M, N, -S)).replace(" ", "")
-        ]["A_std"][0]
-        A_mode_pro_nM_std_im = data[
-            str((L, -M, N, -S)).replace(" ", "")
-        ]["A_std"][1]
+        A_mode_pro_nM_std_re = data[str((L, -M, N, -S)).replace(" ", "")]["A_std"][0]
+        A_mode_pro_nM_std_im = data[str((L, -M, N, -S)).replace(" ", "")]["A_std"][1]
 
         # retrograde negative M
         A_mode_retro_nM = (
-            data[str((L, -M, N, S)).replace(" ", "")][
-                "A"
-            ][0]
-            + 1j
-            * data[str((L, -M, N, S)).replace(" ", "")][
-                "A"
-            ][1]
+            data[str((L, -M, N, S)).replace(" ", "")]["A"][0]
+            + 1j * data[str((L, -M, N, S)).replace(" ", "")]["A"][1]
         )
-        A_mode_retro_nM_std_re = data[
-            str((L, -M, N, S)).replace(" ", "")
-        ]["A_std"][0]
-        A_mode_retro_nM_std_im = data[
-            str((L, -M, N, S)).replace(" ", "")
-        ]["A_std"][1]
+        A_mode_retro_nM_std_re = data[str((L, -M, N, S)).replace(" ", "")]["A_std"][0]
+        A_mode_retro_nM_std_im = data[str((L, -M, N, S)).replace(" ", "")]["A_std"][1]
 
         A_mode_pM = abs(A_mode_pro_pM + A_mode_retro_pM)
         A_mode_nM = abs(A_mode_pro_nM + A_mode_retro_nM)
@@ -512,23 +414,12 @@ def compute_mode_amplitude(data, mode, pro_retro=False, mirror=False):
         )
     else:
         A_mode = abs(
-            data[str((L, M, N, S)).replace(" ", "")]["A"][
-                0
-            ]
-            + 1j
-            * data[str((L, M, N, S)).replace(" ", "")][
-                "A"
-            ][1]
+            data[str((L, M, N, S)).replace(" ", "")]["A"][0]
+            + 1j * data[str((L, M, N, S)).replace(" ", "")]["A"][1]
         )
         A_mode_std = np.sqrt(
-            data[str((L, M, N, S)).replace(" ", "")][
-                "A_std"
-            ][0]
-            ** 2
-            + data[str((L, M, N, S)).replace(" ", "")][
-                "A_std"
-            ][1]
-            ** 2
+            data[str((L, M, N, S)).replace(" ", "")]["A_std"][0] ** 2
+            + data[str((L, M, N, S)).replace(" ", "")]["A_std"][1] ** 2
         )
 
         return A_mode, A_mode_std
@@ -718,11 +609,11 @@ def main():
         kick_angles.append(np.arccos(np.dot(v_f / np.linalg.norm(v_f), [0, 0, 1])))
 
         thetas.append(data[simulation]["theta_flux"])
-        errors.append(data[simulation]['error'])
-        mismatches.append(data[simulation]['mismatch'])
-        t0s.append(data[simulation]['best t0'])
-        CVs.append(data[simulation]['best CV'])
-        
+        errors.append(data[simulation]["error"])
+        mismatches.append(data[simulation]["mismatch"])
+        t0s.append(data[simulation]["best t0"])
+        CVs.append(data[simulation]["best CV"])
+
         ratios_L2M1.append(
             compute_ratio(data[simulation], (2, 1, 0, 1), (2, 2, 0, 1))[0]
         )
@@ -817,20 +708,12 @@ def main():
     pro_retro_ratios_L2M1 = np.array(pro_retro_ratios_L2M1)
     pro_retro_ratios_L2M0 = np.array(pro_retro_ratios_L2M0)
 
-    create_parameters_plot(qs, thetas, ratios_L2M1)
-    create_mode_mixings_plot(
-        thetas, ratios_L2M1_pro_retro, kick_angles, "_L2M1_pro_retro_kick_angles"
+    create_Figure1(
+        qs, thetas, ratios_L2M1, ratios_L2M1_pro_retro_mirror, filename="Figure1.pdf"
     )
-    create_mode_mixings_plot(
-        thetas, ratios_L2M1_pro_retro_mirror, qs, "_L2M1_pro_retro_mirror_mass_ratio"
-    )
-    create_mode_mixings_plot(
-        thetas, ratios_L2M1_pro_retro_mirror, kick_angles, "_L2M1_pro_retro_mirror_kick_angles"
-    )
-    create_asymmetric_mode_mixings_plot(thetas, ratios_L2M1, pro_retro_ratios_L2M2, kick_angles)
-    create_fit_plot(thetas, errors, qs, 'errors')
 
-    create_kick_plot(thetas, kick_angles, qs)
+    create_Figure2(thetas, ratios_L2M1, pro_retro_ratios_L2M2, kick_angles)
+
 
 if __name__ == "__main__":
     main()
