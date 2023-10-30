@@ -10,6 +10,12 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 from matplotlib.transforms import ScaledTranslation
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import seaborn as sns
+import uncertainties
+from matplotlib.collections import PatchCollection
+
+import uncertainties
+from matplotlib.collections import PatchCollection
 
 plt.style.use("paper.mplstyle")
 
@@ -30,6 +36,28 @@ mpl.rcParams["axes.prop_cycle"] = mpl.cycler(color=colors)
 onecol_w_in = 3.4
 twocol_w_in = 7.0625
 
+# define an object that will be used by the legend
+class MulticolorPatch(object):
+    def __init__(self, colors):
+        self.colors = colors
+
+# define a handler for the MulticolorPatch object
+class MulticolorPatchHandler(object):
+    def legend_artist(self, legend, orig_handle, fontsize, handlebox):
+        width, height = handlebox.width, handlebox.height
+        patches = []
+        for i, c in enumerate(orig_handle.colors):
+            patches.append(plt.Rectangle([width/len(orig_handle.colors) * i - handlebox.xdescent,
+                                          -handlebox.ydescent],
+                           width / len(orig_handle.colors),
+                           height,
+                           facecolor=c,
+                           edgecolor='none'))
+
+        patch = PatchCollection(patches,match_original=True)
+
+        handlebox.add_artist(patch)
+        return patch
 
 def compute_rotation_factor(input_mode, output_mode, theta):
     v = quaternion.quaternion(*np.array([np.sin(theta), 0, np.cos(theta)])).normalized()
@@ -525,6 +553,126 @@ def compute_ratio(
     return A_mode1 / A_mode2, (A_mode1 / A_mode2) * np.sqrt(
         (A_mode1_std / A_mode1) ** 2 + (A_mode2_std / A_mode2) ** 2
     )
+
+# define an object that will be used by the legend
+class MulticolorPatch(object):
+    def __init__(self, colors):
+        self.colors = colors
+
+    # define a handler for the MulticolorPatch object
+class MulticolorPatchHandler(object):
+    def legend_artist(self, legend, orig_handle, fontsize, handlebox):
+        width, height = handlebox.width, handlebox.height
+        patches = []
+        for i, c in enumerate(orig_handle.colors):
+            patches.append(plt.Rectangle([width/len(orig_handle.colors) * i - handlebox.xdescent, 
+                                              -handlebox.ydescent],
+                               width / len(orig_handle.colors),
+                               height, 
+                               facecolor=c, 
+                               edgecolor='none'))
+
+        patch = PatchCollection(patches,match_original=True)
+
+        handlebox.add_artist(patch)
+        return patch
+
+def asymmetry_plot(): #Figure 3 
+
+    qnm_json = pd.read_json("QNM_results.json")
+    qnm_dict = qnm_json.to_dict()
+
+    max_diff = {} # save the ratio of the maximum and minimum amplitude ratio
+    for k,evt in qnm_dict.items():
+        amp_dict = {}
+        for l in [2,3]:
+            for m in np.arange(1,l+1):
+                amp_dict[str(l)+str(m)] = compute_mode_amplitude(evt,(l,m,0,1))[0]/compute_mode_amplitude(evt,(l,-m,0,-1))[0]
+        max_diff[k] = max(amp_dict.values())/min(amp_dict.values())
+
+    onecol_w_in = 3.4
+    twocol_w_in = 7.0625
+
+    fig, ax = plt.subplots(
+        1,
+        1,
+        figsize=(onecol_w_in, onecol_w_in * 1.0))
+    alpha = 1
+    lw=1
+    ms = 5
+    precessing_colors = []
+
+    for n,e in enumerate([x[0] for x in sorted(max_diff.items(), key = lambda x: x[1],reverse=True)][2:7]):
+        amp_dict= {}
+        err_dict = {}
+        evt = qnm_dict['{}'.format(e)]
+        color = sns.color_palette("colorblind")[n]
+        for l in [2,3]:
+            for m in np.arange(1,l+1):
+                #amp_dict[r'$A_{{{a}}}$'.format(a=str(l)+str(m))+'\n'+r'$A_{{{a}}}$'.format(a=str(l)+str(-m))] = compute_mode_amplitude(evt,(l,m,0,1))[0]/compute_mode_amplitude(evt,(l,-m,0,-1))[0]
+                p1 = compute_mode_amplitude(evt,(l,m,0,1))
+                m1 = compute_mode_amplitude(evt,(l,-m,0,-1))
+                val_w_err = uncertainties.ufloat(p1[0],p1[1])/uncertainties.ufloat(m1[0],m1[1])
+                amp_dict['l='+str(l)+',\n |m|='+str(m)] = val_w_err.nominal_value
+                err_dict['l='+str(l)+',\n |m|='+str(m)] = val_w_err.std_dev
+        if n>0:
+            alpha=0.5
+            lw = 0.5
+        a = ax.errorbar(x=[x for x in amp_dict.keys()], y=[x for x in amp_dict.values()], yerr=[x for x in err_dict.values()], fmt="o-",alpha=alpha,lw=lw,zorder=-n,markersize=ms,elinewidth=2*lw, color = color)
+        precessing_colors.append(color)
+        print(amp_dict)
+
+    alpha = 1
+    lw=1
+    ms = 7
+
+    for n,e in enumerate([x[0] for x in sorted(max_diff.items(), key = lambda x: x[1],reverse=True)][-2:-1]):
+        amp_dict= {}
+        err_dict = {}
+        evt = qnm_dict['{}'.format(e)]
+        for l in [2,3]:
+            for m in np.arange(1,l+1):
+                #amp_dict[r'$A_{{{a}}}$'.format(a=str(l)+str(m))+'\n'+r'$A_{{{a}}}$'.format(a=str(l)+str(-m))] = compute_mode_amplitude(evt,(l,m,0,1))[0]/compute_mode_amplitude(evt,(l,-m,0,-1))[0]
+                p1 = compute_mode_amplitude(evt,(l,m,0,1))
+                m1 = compute_mode_amplitude(evt,(l,-m,0,-1))
+                val_w_err = uncertainties.ufloat(p1[0],p1[1])/uncertainties.ufloat(m1[0],m1[1])
+                amp_dict['l='+str(l)+',\n |m|='+str(m)] = val_w_err.nominal_value
+                err_dict['l='+str(l)+',\n |m|='+str(m)] = val_w_err.std_dev
+        if n>0:
+            alpha=0.5
+            lw = 0.5
+        ax.errorbar(x=[x for x in amp_dict.keys()], y=[x for x in amp_dict.values()], yerr=[x for x in err_dict.values()], fmt="o--",alpha=alpha,lw=lw,zorder=100,color="black",markersize=ms,elinewidth=2*lw)
+
+
+    ax.set_ylim(-0.2,4.5)
+    #plt.axhline(1,ls="--",color="grey",lw=3,zorder=0)
+    #ax.legend(loc="upper left")
+    h, l = ax.get_legend_handles_labels()
+    h.append(MulticolorPatch(["black"]))
+    l.append("Non-precessing")
+    h.append(MulticolorPatch(precessing_colors))
+    l.append("Precessing")
+    fig.legend(h, l, loc='upper left', 
+             handler_map={MulticolorPatch: MulticolorPatchHandler()}, 
+             bbox_to_anchor=(.125,.875))
+    ax.set_ylabel('$A_{(+,l,m,0)}/A_{(+,l,-m,0)}$')
+
+    xticks = [0, 1, 2, 3, 4 ]
+    xticks_minor = [ 0.5, 3.0001 ]
+    xlbls = ['|m|=1', '|m|=2', '|m|=1', '|m|=2',  '|m|=3']
+    xlbls_minor = ['l=2','l=3']
+
+    ax.set_xticks( xticks )
+    ax.set_xticks( xticks_minor, minor=True )
+    ax.set_xticklabels( xlbls )
+    ax.set_xticklabels( xlbls_minor , minor = True)
+
+    #ax.grid( 'off', axis='x' )
+    #ax.grid( 'off', axis='x', which='minor' )
+
+    ax.tick_params( axis='x', which='minor', direction='out', length=15, bottom = False, top=False)
+    ax.tick_params( axis='x', which='major', bottom='off', top='off' )
+    plt.savefig("CCEFigures/dephased_asymmetries.pdf",bbox_inches="tight")
 
 
 def main():
