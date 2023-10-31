@@ -119,10 +119,8 @@ def create_Figure1(
         newax.imshow(im)
         newax.get_xaxis().set_ticks([])
         newax.get_yaxis().set_ticks([])
-        asymmetry_plot
         plt.setp(newax.spines.values(), color = 'lightgrey')
         
-        main
 
     # panel B
 
