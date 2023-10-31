@@ -31,10 +31,12 @@ mpl.rcParams["axes.prop_cycle"] = mpl.cycler(color=colors)
 onecol_w_in = 3.4
 twocol_w_in = 7.0625
 
+
 # define an object that will be used by the legend
 class MulticolorPatch(object):
     def __init__(self, colors):
         self.colors = colors
+
 
 # define a handler for the MulticolorPatch object
 class MulticolorPatchHandler(object):
@@ -42,17 +44,24 @@ class MulticolorPatchHandler(object):
         width, height = handlebox.width, handlebox.height
         patches = []
         for i, c in enumerate(orig_handle.colors):
-            patches.append(plt.Rectangle([width/len(orig_handle.colors) * i - handlebox.xdescent, 
-                                              -handlebox.ydescent],
-                               width / len(orig_handle.colors),
-                               height, 
-                               facecolor=c, 
-                               edgecolor='none'))
+            patches.append(
+                plt.Rectangle(
+                    [
+                        width / len(orig_handle.colors) * i - handlebox.xdescent,
+                        -handlebox.ydescent,
+                    ],
+                    width / len(orig_handle.colors),
+                    height,
+                    facecolor=c,
+                    edgecolor="none",
+                )
+            )
 
-        patch = PatchCollection(patches,match_original=True)
+        patch = PatchCollection(patches, match_original=True)
 
         handlebox.add_artist(patch)
         return patch
+
 
 def compute_rotation_factor(input_mode, output_mode, theta):
     v = quaternion.quaternion(*np.array([np.sin(theta), 0, np.cos(theta)])).normalized()
@@ -256,7 +265,7 @@ def create_Figure2(
         ls="--",
         color=colors[0],
         lw=1.4,
-        alpha=0.6
+        alpha=0.6,
     )
     axis[1].set_xlim(xlim)
 
@@ -310,7 +319,7 @@ def create_Figure2(
         ls="--",
         color=colors[0],
         lw=1.4,
-        alpha=0.6
+        alpha=0.6,
     )
     axis[2].set_xlim(xlim)
 
@@ -328,49 +337,76 @@ def create_Figure2(
 
     plt.savefig(f"CCEFigures/Figure2.pdf", bbox_inches="tight")
 
+
 # Figure 3
 def create_Figure3(simulations, mirror_mode_ratios, mirror_mode_ratio_errors):
-    fig, axis = plt.subplots(
-        1, 1, figsize=(onecol_w_in, onecol_w_in * 0.88)
-    )
+    fig, axis = plt.subplots(1, 1, figsize=(onecol_w_in, onecol_w_in * 0.88))
     plt.subplots_adjust(hspace=0.02, wspace=0.02)
 
     ratio_spreads = []
     for mirror_mode_ratio in mirror_mode_ratios:
-        ratio_spreads.append(max(mirror_mode_ratio)/min(mirror_mode_ratio))
+        ratio_spreads.append(max(mirror_mode_ratio) / min(mirror_mode_ratio))
 
     max_ratio_spreads = sorted(ratio_spreads, reverse=True)[1:5]
     min_ratio_spread = min(ratio_spreads)
-    
+
     count = 1
     for i, mirror_mode_ratio in enumerate(mirror_mode_ratios):
         if ratio_spreads[i] in max_ratio_spreads:
             if ratio_spreads[i] == max_ratio_spreads[1]:
-                axis.errorbar(x=np.arange(len(mirror_mode_ratio)), y=mirror_mode_ratio, yerr=mirror_mode_ratio_errors[i], fmt="o-", color=colors[1])
+                axis.errorbar(
+                    x=np.arange(len(mirror_mode_ratio)),
+                    y=mirror_mode_ratio,
+                    yerr=mirror_mode_ratio_errors[i],
+                    fmt="o-",
+                    color=colors[1],
+                )
             else:
-                axis.errorbar(x=np.arange(len(mirror_mode_ratio)), y=mirror_mode_ratio, yerr=mirror_mode_ratio_errors[i], fmt="o-", alpha=0.4, lw=0.5, color=colors[1 + count])
+                axis.errorbar(
+                    x=np.arange(len(mirror_mode_ratio)),
+                    y=mirror_mode_ratio,
+                    yerr=mirror_mode_ratio_errors[i],
+                    fmt="o-",
+                    alpha=0.4,
+                    lw=0.5,
+                    color=colors[1 + count],
+                )
                 count += 1
         elif ratio_spreads[i] == min_ratio_spread:
-            axis.errorbar(x=np.arange(len(mirror_mode_ratio)), y=mirror_mode_ratio, yerr=mirror_mode_ratio_errors[i], fmt="o--", zorder=np.inf, lw=1.4)
+            axis.errorbar(
+                x=np.arange(len(mirror_mode_ratio)),
+                y=mirror_mode_ratio,
+                yerr=mirror_mode_ratio_errors[i],
+                fmt="o--",
+                zorder=np.inf,
+                lw=1.4,
+            )
 
-    axis.set_yscale('log')
+    axis.set_yscale("log")
 
     axis.set_xticks(np.arange(len(mirror_mode_ratios[0])))
-    axis.set_xticklabels([r'$(2,2)$',r'$(2,1)$',r'$(3,3)$',r'$(3,2)$',r'$(3,1)$'])
+    axis.set_xticklabels([r"$(2,2)$", r"$(2,1)$", r"$(3,3)$", r"$(3,2)$", r"$(3,1)$"])
 
     h, l = axis.get_legend_handles_labels()
     h.append(MulticolorPatch(["black"]))
     l.append("non-precessing")
     h.append(MulticolorPatch(colors[1:5]))
     l.append("precessing")
-    axis.legend(h, l, loc='lower left', 
-                handler_map={MulticolorPatch: MulticolorPatchHandler()}, 
-                frameon=True, framealpha=1, fontsize=12)
+    axis.legend(
+        h,
+        l,
+        loc="lower left",
+        handler_map={MulticolorPatch: MulticolorPatchHandler()},
+        frameon=True,
+        framealpha=1,
+        fontsize=12,
+    )
 
-    axis.set_xlabel(r'$(\ell,m)$ for $\pm m$ mode ratio', fontsize=12)
+    axis.set_xlabel(r"$(\ell,m)$ for $\pm m$ mode ratio", fontsize=12)
     axis.set_ylabel(r"$A_{(+,\ell,m,0)}/A_{(+,\ell,-m,0)}$", fontsize=12)
 
     plt.savefig(f"CCEFigures/Figure3.pdf", bbox_inches="tight")
+
 
 def compute_mode_amplitude(data, mode, pro_retro=False, mirror=False):
     L, M, N, S = mode
@@ -504,9 +540,7 @@ def compute_ratio(
     )
 
 
-def compute_asymmetry_statistics(
-    data
-):
+def compute_asymmetry_statistics(data):
     asymms = []
     for L in range(2, 3 + 1):
         for M in range(1, L + 1):
@@ -517,14 +551,18 @@ def compute_asymmetry_statistics(
             )
             A_mode_p_pro_std_re = data[str((L, M, 0, 1)).replace(" ", "")]["A_std"][0]
             A_mode_p_pro_std_im = data[str((L, M, 0, 1)).replace(" ", "")]["A_std"][1]
-            
+
             A_mode_p_retro = (
                 data[str((L, M, 0, -1)).replace(" ", "")]["A"][0]
                 + 1j * data[str((L, M, 0, -1)).replace(" ", "")]["A"][1]
             )
-            A_mode_p_retro_std_re = data[str((L, M, 0, -1)).replace(" ", "")]["A_std"][0]
-            A_mode_p_retro_std_im = data[str((L, M, 0, -1)).replace(" ", "")]["A_std"][1]
-            
+            A_mode_p_retro_std_re = data[str((L, M, 0, -1)).replace(" ", "")]["A_std"][
+                0
+            ]
+            A_mode_p_retro_std_im = data[str((L, M, 0, -1)).replace(" ", "")]["A_std"][
+                1
+            ]
+
             A_mode_p = A_mode_p_pro + A_mode_p_retro
             A_mode_p_std_re = np.sqrt(
                 (A_mode_p_pro_std_re**2 + A_mode_p_retro_std_re**2)
@@ -545,9 +583,13 @@ def compute_asymmetry_statistics(
                 data[str((L, -M, 0, 1)).replace(" ", "")]["A"][0]
                 + 1j * data[str((L, -M, 0, 1)).replace(" ", "")]["A"][1]
             )
-            A_mode_n_retro_std_re = data[str((L, -M, 0, 1)).replace(" ", "")]["A_std"][0]
-            A_mode_n_retro_std_im = data[str((L, -M, 0, 1)).replace(" ", "")]["A_std"][1]
-            
+            A_mode_n_retro_std_re = data[str((L, -M, 0, 1)).replace(" ", "")]["A_std"][
+                0
+            ]
+            A_mode_n_retro_std_im = data[str((L, -M, 0, 1)).replace(" ", "")]["A_std"][
+                1
+            ]
+
             A_mode_n = A_mode_n_pro + A_mode_n_retro
             A_mode_n_std_re = np.sqrt(
                 (A_mode_n_pro_std_re**2 + A_mode_n_retro_std_re**2)
@@ -555,8 +597,8 @@ def compute_asymmetry_statistics(
             A_mode_n_std_im = np.sqrt(
                 (A_mode_n_pro_std_im**2 + A_mode_n_retro_std_im**2)
             )
-            
-            asymm = abs(A_mode_p) - abs((-1)**L * np.conjugate(A_mode_n))
+
+            asymm = abs(A_mode_p) - abs((-1) ** L * np.conjugate(A_mode_n))
             asymm_std = np.sqrt(
                 (A_mode_p_std_re**2 + A_mode_p_std_im**2)
                 + (A_mode_n_std_re**2 + A_mode_n_std_im**2)
@@ -572,7 +614,9 @@ def main():
     with open("QNM_results.json") as input_file:
         data = json.load(input_file)
 
-    del data['/panfs/ds09/sxs/kmitman/AnnexToLoopOver/CCEAnnex/Private/q8_7d/1000_CCE/Lev3/']
+    del data[
+        "/panfs/ds09/sxs/kmitman/AnnexToLoopOver/CCEAnnex/Private/q8_7d/1000_CCE/Lev3/"
+    ]
 
     # Construct relevant arrays for ratios, parameters, etc.
     qs = []
@@ -580,12 +624,12 @@ def main():
 
     thetas = []
     kick_angles = []
-    
+
     errors = []
     mismatches = []
     t0s = []
     CVs = []
-    
+
     ratios_L2M1 = []
     ratios_L2M1_pro_retro = []
     ratios_L2M1_mirror = []
@@ -595,7 +639,7 @@ def main():
 
     mirror_mode_ratios = []
     mirror_mode_ratio_errors = []
-    
+
     asymms = []
 
     for i, simulation in enumerate(data):
@@ -613,7 +657,7 @@ def main():
 
         thetas.append(data[simulation]["theta"])
         kick_angles.append(data[simulation]["kick theta"])
-        
+
         errors.append(data[simulation]["error"])
         mismatches.append(data[simulation]["mismatch"])
         t0s.append(data[simulation]["best t0"])
@@ -660,33 +704,35 @@ def main():
 
         mirror_mode_ratio = []
         mirror_mode_ratio_error = []
-        for (L, M) in [(2, 2), (2, 1), (3, 3), (3, 2), (3, 1)]:
-            ratio, ratio_error = compute_ratio(data[simulation], (L, M, 0, 1), (L, -M, 0, -1))
+        for L, M in [(2, 2), (2, 1), (3, 3), (3, 2), (3, 1)]:
+            ratio, ratio_error = compute_ratio(
+                data[simulation], (L, M, 0, 1), (L, -M, 0, -1)
+            )
             mirror_mode_ratio.append(ratio)
             mirror_mode_ratio_error.append(ratio_error)
         mirror_mode_ratios.append(mirror_mode_ratio)
         mirror_mode_ratio_errors.append(mirror_mode_ratio_error)
 
         asymms.append(compute_asymmetry_statistics(data[simulation]))
-        
+
     qs = np.array(qs)
     chi_ps = np.array(chi_ps)
-    
+
     thetas = np.array(thetas)
     kick_angles = np.array(kick_angles)
-    
+
     errors = np.array(errors)
     mismatches = np.array(mismatches)
     t0s = np.array(t0s)
     CVs = np.array(CVs)
-    
+
     ratios_L2M1 = np.array(ratios_L2M1)
     ratios_L2M1_pro_retro = np.array(ratios_L2M1_pro_retro)
     ratios_L2M1_mirror = np.array(ratios_L2M1_mirror)
     ratios_L2M1_pro_retro_mirror = np.array(ratios_L2M1_pro_retro_mirror)
     pro_retro_ratios_L2M2 = np.array(pro_retro_ratios_L2M2)
     pro_retro_ratios_L2M1 = np.array(pro_retro_ratios_L2M1)
-    
+
     mirror_mode_ratios = np.array(mirror_mode_ratios)
     mirror_mode_ratio_errors = np.array(mirror_mode_ratio_errors)
 
@@ -696,13 +742,10 @@ def main():
         qs, thetas, ratios_L2M1, ratios_L2M1_pro_retro_mirror, filename="Figure1.pdf"
     )
 
-    create_Figure2(
-        thetas, ratios_L2M1, pro_retro_ratios_L2M2, kick_angles
-    )
+    create_Figure2(thetas, ratios_L2M1, pro_retro_ratios_L2M2, kick_angles)
 
-    create_Figure3(
-        list(data.keys()), mirror_mode_ratios, mirror_mode_ratio_errors
-    )
+    create_Figure3(list(data.keys()), mirror_mode_ratios, mirror_mode_ratio_errors)
+
 
 if __name__ == "__main__":
     main()
