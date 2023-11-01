@@ -867,6 +867,13 @@ def main():
     t0s = np.array(t0s)
     CVs = np.array(CVs)
 
+    def round_to_n(x, n):
+        return round(x, -int(np.floor(np.log10(x))) + (n - 1))
+
+    print(f'Max Error: {round_to_n(100*max(np.sqrt(2*errors)), 3)}%')
+    print(f'Average t0: {round_to_n(np.mean(t0s), 3)}')
+    print(f'Averate CV: {round_to_n(np.mean(CVs), 3)}')
+
     ratios_L2M1 = np.array(ratios_L2M1)
     ratios_L2M1_pro_retro = np.array(ratios_L2M1_pro_retro)
     ratios_L2M1_mirror = np.array(ratios_L2M1_mirror)
