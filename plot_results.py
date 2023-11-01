@@ -114,7 +114,7 @@ def create_Figure1(
 
     c1.ax.xaxis.set_ticks_position("top")
     c1.ax.set_xlabel(
-        r"$\log_{10}\left(A_{(+,2,1,0)}/A_{(+,2,2,0)}\right)$",
+        r"$\log_{10}\left(A_{(+,2,\pm1,0)}/A_{(+,2,\pm2,0)}\right)$",
         fontsize=12,
         labelpad=-36,
     )
@@ -546,6 +546,9 @@ def create_Figure3_supplement(thetas, chi_ps, qs):
 
     plt.savefig(f"CCEFigures/supplement_Figure3.pdf", bbox_inches="tight")
 
+def create_Figure4_supplement():
+    return
+
 def compute_mode_amplitude(data, mode, pro_retro=False, mirror=False):
     L, M, N, S = mode
     if pro_retro and not mirror:
@@ -871,8 +874,10 @@ def main():
         return round(x, -int(np.floor(np.log10(x))) + (n - 1))
 
     print(f'Max Error: {round_to_n(100*max(np.sqrt(2*errors)), 3)}%')
+    print(f'Average Error: {round_to_n(100*np.mean(np.sqrt(2*errors)), 3)}%')
     print(f'Average t0: {round_to_n(np.mean(t0s), 3)}')
-    print(f'Averate CV: {round_to_n(np.mean(CVs), 3)}')
+    print(f'Max CV: {round_to_n(100*max(CVs), 3)}%')
+    print(f'Averate CV: {round_to_n(100*np.mean(CVs), 3)}%')
 
     ratios_L2M1 = np.array(ratios_L2M1)
     ratios_L2M1_pro_retro = np.array(ratios_L2M1_pro_retro)
@@ -889,7 +894,7 @@ def main():
     time_dependent_thetas = np.array(time_dependent_thetas)
 
     create_Figure1(
-        qs, thetas, ratios_L2M1, ratios_L2M1_pro_retro_mirror, filename="Figure1.pdf"
+        qs, thetas, ratios_L2M1_mirror, ratios_L2M1_pro_retro_mirror, filename="Figure1.pdf"
     )
 
     create_Figure2(thetas, ratios_L2M1, pro_retro_ratios_L2M2, kick_angles)
