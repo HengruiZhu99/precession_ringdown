@@ -253,7 +253,6 @@ def create_Figure2(
         ]
     )
 
-    # Change label to just be some WignerD notation that we define in methods?
     axis[1].plot(
         angles,
         rotation_factors,
@@ -722,6 +721,96 @@ def create_Figure5_supplement(thetas, ratios_L2M0_pro_retro_mirror, qs):
 
     plt.savefig(f"CCEFigures/supplement_Figure5.pdf", bbox_inches="tight")
 
+def create_Figure6_supplement(thetas, ratios_L3M2, ratios_L3M1, ratios_L3M0, kick_angles):
+    fig, axis = plt.subplot_mosaic([['A', 'A', 'A'],['B', 'C', 'D']], figsize=(twocol_w_in, twocol_w_in*0.5), height_ratios=[0.05, 1])
+    plt.subplots_adjust(hspace=0.02, wspace=0.02)
+    
+    modes = [(3, 2), (3, 1), (3, 0)]
+    datas = [ratios_L3M2, ratios_L3M1, ratios_L3M0]
+    for i, plot in enumerate(['B','C','D']):
+        result = axis[plot].scatter(thetas, datas[i], c=kick_angles, s=8, cmap='coolwarm')
+        axis[plot].set_yscale('log')
+        axis[plot].set_xlim(0 - 0.2, np.pi + 0.2)
+        
+        axis[plot].set_xticks(
+            [
+                0.0,
+                np.pi / 8,
+                2 * np.pi / 8,
+                3 * np.pi / 8,
+                4 * np.pi / 8,
+                5 * np.pi / 8,
+                6 * np.pi / 8,
+                7 * np.pi / 8,
+                np.pi,
+            ]
+        )
+        axis[plot].set_xticklabels(
+            [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
+        )
+        
+        angles = np.linspace(0, np.pi, 100)
+        rotation_factors = np.array(
+            [
+                abs(compute_rotation_factor((3, 3), (3, modes[i][1]), angle))
+                / abs(compute_rotation_factor((3, 3), (3, 3), angle))
+                for angle in angles
+            ]
+        )
+        
+        axis[plot].plot(
+            angles,
+            rotation_factors,
+            label=r"$\cfrac{\mathfrak{D}_{"+str(modes[i][1])+r",3}^{3}(\theta)}{\mathfrak{D}_{3,3}^{3}(\theta)}$",
+        )
+        
+        xlim = axis[plot].get_xlim()
+        axis[plot].plot(
+            np.arange(-np.pi, 2 * np.pi, 0.01),
+            np.ones_like(np.arange(-np.pi, 2 * np.pi, 0.01)),
+            ls="--",
+            color=colors[0],
+            lw=1.4,
+            alpha=0.6,
+        )
+        axis[plot].set_xlim(xlim)
+        
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+        axis[plot].text(0.68, 0.36, r'$m='+str(modes[i][1])+'$', transform=axis[plot].transAxes, fontsize=12, verticalalignment='top', bbox=props)
+        
+        axis[plot].legend(loc="lower right", frameon=True, framealpha=1, fontsize=12)
+        
+        axis[plot].set_ylim(1e-5, 2e2)
+        if i > 0:
+            axis[plot].set_yticklabels([])
+            
+        axis[plot].set_xlabel(r"misalignment angle $\theta$", fontsize=12)
+        
+    axis['B'].set_ylabel(r"$A_{(+,3,m,0)}/A_{(+,3,3,0)}$", fontsize=12)
+    
+    c = fig.colorbar(result, cax=axis['A'], orientation="horizontal", pad=0)
+    
+    c.ax.xaxis.set_ticks_position("top")
+    c.ax.set_xticks(
+        [
+            0.0,
+            np.pi / 8,
+            2 * np.pi / 8,
+            3 * np.pi / 8,
+            4 * np.pi / 8,
+            5 * np.pi / 8,
+            6 * np.pi / 8,
+            7 * np.pi / 8,
+            np.pi,
+        ]
+    )
+    c.ax.set_xticklabels(
+        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
+    )
+    c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=12, labelpad=-36)
+    
+    plt.savefig(f"CCEFigures/supplement_Figure6.pdf", bbox_inches="tight")
+
 def compute_mode_amplitude(data, mode, pro_retro=False, mirror=False):
     L, M, N, S = mode
     if pro_retro and not mirror:
@@ -958,6 +1047,10 @@ def main():
 
     asymms = []
 
+    ratios_L3M2 = []
+    ratios_L3M1 = []
+    ratios_L3M0 = []
+    
     time_dependent_thetas = []
 
     for i, simulation in enumerate(data):
@@ -1065,6 +1158,28 @@ def main():
 
         asymms.append(compute_asymmetry_statistics(data[simulation]))
 
+        ratios_L3M2.append(
+            compute_ratio(
+                data[simulation],
+                (3, 2, 0, 1),
+                (3, 3, 0, 1),
+            )[0]
+        )
+        ratios_L3M1.append(
+            compute_ratio(
+                data[simulation],
+                (3, 1, 0, 1),
+                (3, 3, 0, 1),
+            )[0]
+        )
+        ratios_L3M0.append(
+            compute_ratio(
+                data[simulation],
+                (3, 0, 0, 1),
+                (3, 3, 0, 1),
+            )[0]
+        )
+        
         if len(data[simulation]['thetas']) == len(np.arange(-1000, 250, 0.1)):
             time_dependent_thetas.append(data[simulation]['thetas'])
         else:
@@ -1108,6 +1223,10 @@ def main():
 
     asymms = np.array(asymms)
 
+    ratios_L3M2 = np.array(ratios_L3M2)
+    ratios_L3M1 = np.array(ratios_L3M1)
+    ratios_L3M0 = np.array(ratios_L3M0)
+
     time_dependent_thetas = np.array(time_dependent_thetas)
 
     create_Figure1(
@@ -1127,6 +1246,8 @@ def main():
     create_Figure4_supplement(thetas, ratios_L2M0, kick_angles)
 
     create_Figure5_supplement(thetas, ratios_L2M0_pro_retro_mirror, qs)
+
+    create_Figure6_supplement(thetas, ratios_L3M2, ratios_L3M1, ratios_L3M0, kick_angles)
 
 if __name__ == "__main__":
     main()
