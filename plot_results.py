@@ -149,7 +149,7 @@ def create_Figure1(
     axis[1][1].plot(
         angles,
         rotation_factors,
-        label=r"$\left|\cfrac{\mathfrak{D}_{1,2}^{2,\pm}(\theta)}{\mathfrak{D}_{2,2}^{2,\pm}(\theta)}\right|$",
+        label=r"$\cfrac{\mathfrak{D}_{1,2}^{2,\pm}(\theta)}{\mathfrak{D}_{2,2}^{2,\pm}(\theta)}$",
     )
 
     xlim = axis[1][1].get_xlim()
@@ -257,7 +257,7 @@ def create_Figure2(
     axis[1].plot(
         angles,
         rotation_factors,
-        label=r"$\left|\cfrac{\mathfrak{D}_{1,2}^{2}(\theta)}{\mathfrak{D}_{2,2}^{2}(\theta)}\right|$",
+        label=r"$\cfrac{\mathfrak{D}_{1,2}^{2}(\theta)}{\mathfrak{D}_{2,2}^{2}(\theta)}$",
     )
 
     xlim = axis[1].get_xlim()
@@ -311,7 +311,7 @@ def create_Figure2(
     axis[2].plot(
         angles,
         rotation_factors,
-        label=r"$\left|\cfrac{\mathfrak{D}_{-2,2}^{2}(\theta)}{\mathfrak{D}_{2,2}^{2}(\theta)}\right|$",
+        label=r"$\cfrac{\mathfrak{D}_{-2,2}^{2}(\theta)}{\mathfrak{D}_{2,2}^{2}(\theta)}$",
     )
 
     xlim = axis[2].get_xlim()
@@ -404,7 +404,7 @@ def create_Figure3(simulations, mirror_mode_ratios, mirror_mode_ratio_errors):
         fontsize=12,
     )
 
-    axis.set_xlabel(r"$(\ell,m)$ for $\pm m$ mode ratio", fontsize=12)
+    axis.set_xlabel(r"$(\ell,|m|)$", fontsize=12)
     axis.set_ylabel(r"$A_{(+,\ell,m,0)}/A_{(+,\ell,-m,0)}$", fontsize=12)
 
     plt.savefig(f"CCEFigures/Figure3.pdf", bbox_inches="tight")
