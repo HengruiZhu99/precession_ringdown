@@ -207,9 +207,9 @@ def create_Figure1(
 
     c2 = fig.colorbar(result, cax=axis[0][1], orientation="horizontal")
 
+    c2.ax.xaxis.set_ticks_position("top")
     c2.ax.set_xlim(1, 8)
     c2.ax.xaxis.set_ticks([1, 2, 3, 4, 5, 6, 7, 8])
-    c2.ax.xaxis.set_ticks_position("top")
     c2.ax.set_xlabel(r"mass ratio $q$", fontsize=12, labelpad=-36)
 
     plt.savefig(f"CCEFigures/{filename}", bbox_inches="tight")
@@ -335,6 +335,22 @@ def create_Figure2(
     c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
 
     c.ax.xaxis.set_ticks_position("top")
+    c.ax.set_xticks(
+        [
+            0.0,
+            np.pi / 8,
+            2 * np.pi / 8,
+            3 * np.pi / 8,
+            4 * np.pi / 8,
+            5 * np.pi / 8,
+            6 * np.pi / 8,
+            7 * np.pi / 8,
+            np.pi,
+        ]
+    )
+    c.ax.set_xticklabels(
+        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
+    )
     c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=12, labelpad=-30)
 
     plt.savefig(f"CCEFigures/Figure2.pdf", bbox_inches="tight")
@@ -444,7 +460,7 @@ def create_Figure1_supplement(t, time_dependent_thetas, qs):
     c.ax.xaxis.set_ticks_position("top")
     c.ax.set_xlabel(r"mass ratio $q$", fontsize=12, labelpad=-30)
     c.ax.set_xlim(1, 8)
-    c.ax.xaxis.set_ticks([1, 2, 3, 4, 5, 6, 7, 8])
+    c.ax.set_xticks([1, 2, 3, 4, 5, 6, 7, 8])
 
     axis[1].set_xlabel(r"$(t-t_{\mathrm{peak}})/M$", fontsize=12)
     axis[1].set_ylabel(r"misalignment angle $\theta$", fontsize=12)
@@ -480,7 +496,7 @@ def create_Figure2_supplement(thetas, errors, qs):
     c.ax.xaxis.set_ticks_position("top")
     c.ax.set_xlabel(r"mass ratio $q$", fontsize=12, labelpad=-30)
     c.ax.set_xlim(1, 8)
-    c.ax.xaxis.set_ticks([1, 2, 3, 4, 5, 6, 7, 8])
+    c.ax.set_xticks([1, 2, 3, 4, 5, 6, 7, 8])
 
     axis[1].set_xlabel(r"misalignment angle $\theta$", fontsize=12)
     axis[1].set_ylabel(r"relative error", fontsize=12)
@@ -539,15 +555,172 @@ def create_Figure3_supplement(thetas, chi_ps, qs):
     c.ax.xaxis.set_ticks_position("top")
     c.ax.set_xlabel(r"mass ratio $q$", fontsize=12, labelpad=-30)
     c.ax.set_xlim(1, 8)
-    c.ax.xaxis.set_ticks([1, 2, 3, 4, 5, 6, 7, 8])
+    c.ax.set_xticks([1, 2, 3, 4, 5, 6, 7, 8])
 
     axis[3].set_xlabel(r"misalignment angle $\theta$", fontsize=12)
     axis[3].set_ylabel(r"$\chi_{p}$", fontsize=12, y=1.2)
 
     plt.savefig(f"CCEFigures/supplement_Figure3.pdf", bbox_inches="tight")
 
-def create_Figure4_supplement():
-    return
+def create_Figure4_supplement(thetas, ratios_L2M0, kick_angles):
+    fig, axis = plt.subplots(
+        2, 1, figsize=(onecol_w_in, onecol_w_in * 0.8), height_ratios=[0.05, 1]
+    )
+    plt.subplots_adjust(hspace=0.02, wspace=0.02)
+
+    result = axis[1].scatter(thetas, ratios_L2M0, c=kick_angles, s=8, cmap="coolwarm")
+
+    axis[1].set_yscale("log")
+    axis[1].set_xlim(0 - 0.2, np.pi + 0.2)
+
+    axis[1].set_xticks(
+        [
+            0.0,
+            np.pi / 8,
+            2 * np.pi / 8,
+            3 * np.pi / 8,
+            4 * np.pi / 8,
+            5 * np.pi / 8,
+            6 * np.pi / 8,
+            7 * np.pi / 8,
+            np.pi,
+        ]
+    )
+    axis[1].set_xticklabels(
+        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
+    )
+
+    angles = np.linspace(0, np.pi, 100)
+    rotation_factors = np.array(
+        [
+            abs(compute_rotation_factor((2, 2), (2, 0), angle))
+            / abs(compute_rotation_factor((2, 2), (2, 2), angle))
+            for angle in angles
+        ]
+    )
+
+    axis[1].plot(
+        angles,
+        rotation_factors,
+        label=r"$\cfrac{\mathfrak{D}_{0,2}^{2}(\theta)}{\mathfrak{D}_{2,2}^{2}(\theta)}$",
+    )
+
+    xlim = axis[1].get_xlim()
+    axis[1].plot(
+        np.arange(-np.pi, 2 * np.pi, 0.01),
+        np.ones_like(np.arange(-np.pi, 2 * np.pi, 0.01)),
+        ls="--",
+        color=colors[0],
+        lw=1.4,
+        alpha=0.6,
+    )
+    axis[1].set_xlim(xlim)
+
+    axis[1].set_ylim(top=2e2)
+
+    axis[1].set_xlabel(r"misalignment angle $\theta$", fontsize=12)
+    axis[1].set_ylabel(r"$A_{(+,2,0,0)}/A_{(+,2,2,0)}$", fontsize=12)
+
+    axis[1].legend(loc="lower right", frameon=True, framealpha=1, fontsize=12)
+        
+    c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
+
+    c.ax.xaxis.set_ticks_position("top")
+    c.ax.set_xticks(
+        [
+            0.0,
+            np.pi / 8,
+            2 * np.pi / 8,
+            3 * np.pi / 8,
+            4 * np.pi / 8,
+            5 * np.pi / 8,
+            6 * np.pi / 8,
+            7 * np.pi / 8,
+            np.pi,
+        ]
+    )
+    c.ax.set_xticklabels(
+        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
+    )
+    c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=12, labelpad=-30)
+
+    plt.savefig(f"CCEFigures/supplement_Figure4.pdf", bbox_inches="tight")
+    
+def create_Figure5_supplement(thetas, ratios_L2M0_pro_retro_mirror, qs):
+    fig, axis = plt.subplots(
+        2, 1, figsize=(onecol_w_in, onecol_w_in * 0.8), height_ratios=[0.05, 1]
+    )
+    plt.subplots_adjust(hspace=0.02, wspace=0.02)
+
+    result = axis[1].scatter(thetas, ratios_L2M0_pro_retro_mirror, c=qs, s=8, cmap="magma", vmax=8.5)
+
+    axis[1].set_yscale("log")
+    axis[1].set_xlim(0 - 0.2, np.pi + 0.2)
+
+    axis[1].set_xticks(
+        [
+            0.0,
+            np.pi / 8,
+            2 * np.pi / 8,
+            3 * np.pi / 8,
+            4 * np.pi / 8,
+            5 * np.pi / 8,
+            6 * np.pi / 8,
+            7 * np.pi / 8,
+            np.pi,
+            ]
+    )
+    axis[1].set_xticklabels(
+        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
+    )
+
+    angles = np.linspace(0, np.pi, 100)
+    rotation_factors = np.array(
+        [
+            abs(
+                compute_rotation_factor((2, 2), (2, 0), angle)
+                + compute_rotation_factor((2, 2), (2, -0), angle)
+            )
+            / abs(
+                compute_rotation_factor((2, 2), (2, 2), angle)
+                + compute_rotation_factor((2, 2), (2, -2), angle)
+            )
+            for angle in angles
+        ]
+    )
+
+    axis[1].plot(
+        angles,
+        rotation_factors,
+        label=r"$\cfrac{\mathfrak{D}_{0,2}^{2,\pm}(\theta)}{\mathfrak{D}_{2,2}^{2,\pm}(\theta)}$",
+    )
+
+    xlim = axis[1].get_xlim()
+    axis[1].plot(
+        np.arange(-np.pi, 2 * np.pi, 0.01),
+        np.ones_like(np.arange(-np.pi, 2 * np.pi, 0.01)),
+        ls="--",
+        color=colors[0],
+        lw=1.4,
+        alpha=0.6,
+    )
+    axis[1].set_xlim(xlim)
+
+    axis[1].set_ylim(top=4e1)
+
+    axis[1].set_xlabel(r"misalignment angle $\theta$", fontsize=12)
+    axis[1].set_ylabel(r"$A_{(\pm,2,0,0)}/A_{(\pm,2,\pm2,0)}$", fontsize=12)
+
+    axis[1].legend(loc="lower right", frameon=True, framealpha=1, fontsize=12)
+    
+    c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
+
+    c.ax.xaxis.set_ticks_position("top")
+    c.ax.set_xlim(1, 8)
+    c.ax.set_xticks([1, 2, 3, 4, 5, 6, 7, 8])
+    c.ax.set_xlabel(r"mass ratio $q$", fontsize=12, labelpad=-30)
+
+    plt.savefig(f"CCEFigures/supplement_Figure5.pdf", bbox_inches="tight")
 
 def compute_mode_amplitude(data, mode, pro_retro=False, mirror=False):
     L, M, N, S = mode
@@ -771,6 +944,12 @@ def main():
     ratios_L2M1_pro_retro = []
     ratios_L2M1_mirror = []
     ratios_L2M1_pro_retro_mirror = []
+
+    ratios_L2M0 = []
+    ratios_L2M0_pro_retro = []
+    ratios_L2M0_mirror = []
+    ratios_L2M0_pro_retro_mirror = []
+
     pro_retro_ratios_L2M2 = []
     pro_retro_ratios_L2M1 = []
 
@@ -834,6 +1013,38 @@ def main():
                 mode2_mirror=True,
             )[0]
         )
+
+        ratios_L2M0.append(
+            compute_ratio(data[simulation], (2, 0, 0, 1), (2, 2, 0, 1))[0]
+        )
+        ratios_L2M0_pro_retro.append(
+            compute_ratio(
+                data[simulation],
+                (2, 0, 0, 1),
+                (2, 2, 0, 1),
+                mode1_pro_retro=True,
+                mode2_pro_retro=True,
+            )[0]
+        )
+        ratios_L2M0_mirror.append(
+            compute_ratio(
+                data[simulation],
+                (2, 0, 0, 1),
+                (2, 2, 0, 1),
+                mode1_mirror=False,
+                mode2_mirror=True,
+            )[0]
+        )
+        ratios_L2M0_pro_retro_mirror.append(
+            compute_ratio(
+                data[simulation],
+                (2, 0, 0, 1),
+                (2, 2, 0, 1),
+                mode1_pro_retro=False,
+                mode2_pro_retro=True,
+            )[0]
+        )
+
         pro_retro_ratios_L2M2.append(
             compute_ratio(data[simulation], (2, 2, 0, -1), (2, 2, 0, 1))[0]
         )
@@ -877,12 +1088,18 @@ def main():
     print(f'Average Error: {round_to_n(100*np.mean(np.sqrt(2*errors)), 3)}%')
     print(f'Average t0: {round_to_n(np.mean(t0s), 3)}')
     print(f'Max CV: {round_to_n(100*max(CVs), 3)}%')
-    print(f'Averate CV: {round_to_n(100*np.mean(CVs), 3)}%')
+    print(f'Average CV: {round_to_n(100*np.mean(CVs), 3)}%')
 
     ratios_L2M1 = np.array(ratios_L2M1)
     ratios_L2M1_pro_retro = np.array(ratios_L2M1_pro_retro)
     ratios_L2M1_mirror = np.array(ratios_L2M1_mirror)
     ratios_L2M1_pro_retro_mirror = np.array(ratios_L2M1_pro_retro_mirror)
+
+    ratios_L2M0 = np.array(ratios_L2M0)
+    ratios_L2M0_pro_retro = np.array(ratios_L2M0_pro_retro)
+    ratios_L2M0_mirror = np.array(ratios_L2M0_mirror)
+    ratios_L2M0_pro_retro_mirror = np.array(ratios_L2M0_pro_retro_mirror)
+
     pro_retro_ratios_L2M2 = np.array(pro_retro_ratios_L2M2)
     pro_retro_ratios_L2M1 = np.array(pro_retro_ratios_L2M1)
 
@@ -906,6 +1123,10 @@ def main():
     create_Figure2_supplement(thetas, errors, qs)
 
     create_Figure3_supplement(thetas, chi_ps, qs)
+
+    create_Figure4_supplement(thetas, ratios_L2M0, kick_angles)
+
+    create_Figure5_supplement(thetas, ratios_L2M0_pro_retro_mirror, qs)
 
 if __name__ == "__main__":
     main()
