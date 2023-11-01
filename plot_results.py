@@ -11,6 +11,8 @@ from matplotlib.patches import Ellipse
 from matplotlib.transforms import ScaledTranslation
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.collections import PatchCollection
+import matplotlib.colors as mplcolors
+import matplotlib.cm as cmx
 
 plt.style.use("paper.mplstyle")
 
@@ -147,7 +149,7 @@ def create_Figure1(
     axis[1][1].plot(
         angles,
         rotation_factors,
-        label=r"$\cfrac{\mathfrak{D}_{1,2}^{(2),\pm}}{\mathfrak{D}_{2,2}^{(2),\pm}}$",
+        label=r"$\left|\cfrac{\mathfrak{D}_{1,2}^{2,\pm}(\theta)}{\mathfrak{D}_{2,2}^{2,\pm}(\theta)}\right|$",
     )
 
     xlim = axis[1][1].get_xlim()
@@ -255,7 +257,7 @@ def create_Figure2(
     axis[1].plot(
         angles,
         rotation_factors,
-        label=r"$\cfrac{\mathfrak{D}_{1,2}^{(2)}}{\mathfrak{D}_{2,2}^{(2)}}$",
+        label=r"$\left|\cfrac{\mathfrak{D}_{1,2}^{2}(\theta)}{\mathfrak{D}_{2,2}^{2}(\theta)}\right|$",
     )
 
     xlim = axis[1].get_xlim()
@@ -309,7 +311,7 @@ def create_Figure2(
     axis[2].plot(
         angles,
         rotation_factors,
-        label=r"$\cfrac{\mathfrak{D}_{-2,2}^{(2)}}{\mathfrak{D}_{2,2}^{(2)}}$",
+        label=r"$\left|\cfrac{\mathfrak{D}_{-2,2}^{2}(\theta)}{\mathfrak{D}_{2,2}^{2}(\theta)}\right|$",
     )
 
     xlim = axis[2].get_xlim()
@@ -407,6 +409,142 @@ def create_Figure3(simulations, mirror_mode_ratios, mirror_mode_ratio_errors):
 
     plt.savefig(f"CCEFigures/Figure3.pdf", bbox_inches="tight")
 
+
+def create_Figure1_supplement(t, time_dependent_thetas, qs):
+    fig, axis = plt.subplots(2, 1, figsize=(onecol_w_in, onecol_w_in * 0.88), height_ratios=[0.05, 1.])
+    plt.subplots_adjust(hspace=0.02, wspace=0.02)
+
+    cm = plt.get_cmap('magma') 
+    cNorm = mplcolors.Normalize(vmin=0, vmax=8.5)
+    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
+    for i, time_dependent_theta in enumerate(time_dependent_thetas):
+        idx1 = np.argmin(abs(t - -500))
+        idx2 = np.argmin(abs(t - 20)) + 1 
+        axis[1].plot(t[idx1:idx2], time_dependent_theta[idx1:idx2], c=scalarMap.to_rgba(qs[i]))
+
+    axis[1].set_yticks(
+        [
+            0.0,
+            np.pi / 8,
+            2 * np.pi / 8,
+            3 * np.pi / 8,
+            4 * np.pi / 8,
+            5 * np.pi / 8,
+            6 * np.pi / 8,
+            7 * np.pi / 8,
+            np.pi,
+        ]
+    )
+    axis[1].set_yticklabels(
+        [r"$0$", None, r"$\frac{\pi}{4}$", None, r"$\frac{\pi}{2}$", None, r"$\frac{3\pi}{4}$", None, r"$\pi$"]
+    )
+
+    c = fig.colorbar(scalarMap, cax=axis[0], orientation="horizontal", pad=0)
+
+    c.ax.xaxis.set_ticks_position("top")
+    c.ax.set_xlabel(r"mass ratio $q$", fontsize=12, labelpad=-30)
+    c.ax.set_xlim(1, 8)
+    c.ax.xaxis.set_ticks([1, 2, 3, 4, 5, 6, 7, 8])
+
+    axis[1].set_xlabel(r"$(t-t_{\mathrm{peak}})/M$", fontsize=12)
+    axis[1].set_ylabel(r"misalignment angle $\theta$", fontsize=12)
+
+    plt.savefig(f"CCEFigures/supplement_Figure1.pdf", bbox_inches="tight")
+
+def create_Figure2_supplement(thetas, errors, qs):
+    fig, axis = plt.subplots(2, 1, figsize=(onecol_w_in, onecol_w_in * 0.88), height_ratios=[0.05, 1.])
+    plt.subplots_adjust(hspace=0.02, wspace=0.02)
+
+    result = axis[1].scatter(thetas, np.sqrt(2.*errors), c=qs, s=8, cmap='magma', vmax=8.5)
+    axis[1].set_yscale('log')
+
+    axis[1].set_xticks(
+        [
+            0.0,
+            np.pi / 8,
+            2 * np.pi / 8,
+            3 * np.pi / 8,
+            4 * np.pi / 8,
+            5 * np.pi / 8,
+            6 * np.pi / 8,
+            7 * np.pi / 8,
+            np.pi,
+        ]
+    )
+    axis[1].set_xticklabels(
+        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
+    )
+
+    c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
+
+    c.ax.xaxis.set_ticks_position("top")
+    c.ax.set_xlabel(r"mass ratio $q$", fontsize=12, labelpad=-30)
+    c.ax.set_xlim(1, 8)
+    c.ax.xaxis.set_ticks([1, 2, 3, 4, 5, 6, 7, 8])
+
+    axis[1].set_xlabel(r"misalignment angle $\theta$", fontsize=12)
+    axis[1].set_ylabel(r"relative error", fontsize=12)
+
+    plt.savefig(f"CCEFigures/supplement_Figure2.pdf", bbox_inches="tight")
+
+def create_Figure3_supplement(thetas, chi_ps, qs):
+    fig, axis = plt.subplots(4, 1, figsize=(onecol_w_in, onecol_w_in * 0.88), height_ratios=[0.108, 1., 0.1, 1.])
+    plt.subplots_adjust(hspace=0.05, wspace=0.02)
+
+    result = axis[1].scatter(thetas, chi_ps, c=qs, s=8, cmap='magma', vmax=8.5)
+    axis[1].set_yscale('log')
+    axis[1].set_ylim(2e-1, 1e0)
+
+    axis[1].set_yticks([2e-1, 3e-1, 4e-1, 5e-1, 6e-1, 7e-1, 8e-1, 9e-1, 1e0])
+    axis[1].set_yticklabels([None, None, None, None, None, None, None, None, r'$10^{0}$'])
+
+    result = axis[3].scatter(thetas, chi_ps, c=qs, s=8, cmap='magma', vmax=8.5)
+    axis[3].set_yscale('log')
+    axis[3].set_ylim(top=2e-6, bottom=6e-8)
+
+    axis[2].set_visible(False)
+
+    axis[1].spines.bottom.set_visible(False)
+    axis[3].spines.top.set_visible(False)
+    axis[1].xaxis.tick_top()
+    axis[1].tick_params(labeltop=False)
+    axis[3].xaxis.tick_bottom()
+
+    d = .5  # proportion of vertical to horizontal extent of the slanted line
+    kwargs = dict(marker=[(-1, -d), (1, d)], markersize=12,
+                  linestyle="none", color='k', mec='k', mew=1, clip_on=False)
+    axis[1].plot([0, 1], [0, 0], transform=axis[1].transAxes, **kwargs)
+    axis[3].plot([0, 1], [1, 1], transform=axis[3].transAxes, **kwargs)
+
+    for i in [1, 3]:
+        axis[i].set_xticks(
+            [
+                0.0,
+                np.pi / 8,
+                2 * np.pi / 8,
+                3 * np.pi / 8,
+                4 * np.pi / 8,
+                5 * np.pi / 8,
+                6 * np.pi / 8,
+                7 * np.pi / 8,
+                np.pi,
+            ]
+        )
+        axis[i].set_xticklabels(
+            [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
+        )
+        
+    c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
+
+    c.ax.xaxis.set_ticks_position("top")
+    c.ax.set_xlabel(r"mass ratio $q$", fontsize=12, labelpad=-30)
+    c.ax.set_xlim(1, 8)
+    c.ax.xaxis.set_ticks([1, 2, 3, 4, 5, 6, 7, 8])
+
+    axis[3].set_xlabel(r"misalignment angle $\theta$", fontsize=12)
+    axis[3].set_ylabel(r"$\chi_{p}$", fontsize=12, y=1.2)
+
+    plt.savefig(f"CCEFigures/supplement_Figure3.pdf", bbox_inches="tight")
 
 def compute_mode_amplitude(data, mode, pro_retro=False, mirror=False):
     L, M, N, S = mode
@@ -614,10 +752,6 @@ def main():
     with open("QNM_results.json") as input_file:
         data = json.load(input_file)
 
-    del data[
-        "/panfs/ds09/sxs/kmitman/AnnexToLoopOver/CCEAnnex/Private/q8_7d/1000_CCE/Lev3/"
-    ]
-
     # Construct relevant arrays for ratios, parameters, etc.
     qs = []
     chi_ps = []
@@ -641,6 +775,8 @@ def main():
     mirror_mode_ratio_errors = []
 
     asymms = []
+
+    time_dependent_thetas = []
 
     for i, simulation in enumerate(data):
         q = data[simulation]["q"]
@@ -715,6 +851,11 @@ def main():
 
         asymms.append(compute_asymmetry_statistics(data[simulation]))
 
+        if len(data[simulation]['thetas']) == len(np.arange(-1000, 250, 0.1)):
+            time_dependent_thetas.append(data[simulation]['thetas'])
+        else:
+            time_dependent_thetas.append([None]*len(np.arange(-1000, 250, 0.1)))
+            
     qs = np.array(qs)
     chi_ps = np.array(chi_ps)
 
@@ -738,6 +879,8 @@ def main():
 
     asymms = np.array(asymms)
 
+    time_dependent_thetas = np.array(time_dependent_thetas)
+
     create_Figure1(
         qs, thetas, ratios_L2M1, ratios_L2M1_pro_retro_mirror, filename="Figure1.pdf"
     )
@@ -745,7 +888,12 @@ def main():
     create_Figure2(thetas, ratios_L2M1, pro_retro_ratios_L2M2, kick_angles)
 
     create_Figure3(list(data.keys()), mirror_mode_ratios, mirror_mode_ratio_errors)
+    
+    create_Figure1_supplement(np.arange(-1000, 250, 0.1), time_dependent_thetas, qs)
 
+    create_Figure2_supplement(thetas, errors, qs)
+
+    create_Figure3_supplement(thetas, chi_ps, qs)
 
 if __name__ == "__main__":
     main()
