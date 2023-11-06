@@ -698,8 +698,26 @@ def create_Figure4_supplement(thetas, ratios_L2M0, kick_angles):
     plt.subplots_adjust(hspace=0.02, wspace=0.02)
 
     result = axis[1].scatter(
-        thetas, ratios_L2M0[:, 0], c=kick_angles, s=8, cmap="coolwarm"
+        [None] * len(kick_angles),
+        [None] * len(kick_angles),
+        c=kick_angles,
+        s=8,
+        cmap="coolwarm",
     )
+
+    cm = plt.get_cmap("coolwarm")
+    cNorm = mplcolors.Normalize(vmin=min(kick_angles), vmax=max(kick_angles))
+    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
+    for i in range(len(thetas)):
+        markers, caps, bars = axis[1].errorbar(
+            thetas[i],
+            ratios_L2M0[:, 0][i],
+            yerr=ratios_L2M0[:, 1][i],
+            fmt="o",
+            markersize=np.sqrt(8),
+            color=scalarMap.to_rgba(kick_angles[i]),
+        )
+        [bar.set_alpha(0.4) for bar in bars]
 
     axis[1].set_yscale("log")
     axis[1].set_xlim(0 - 0.2, np.pi + 0.2)
@@ -734,6 +752,7 @@ def create_Figure4_supplement(thetas, ratios_L2M0, kick_angles):
         angles,
         rotation_factors,
         label=r"$\cfrac{\mathfrak{D}_{0,2}^{2}(\theta)}{\mathfrak{D}_{2,2}^{2}(\theta)}$",
+        zorder=np.inf,
     )
 
     xlim = axis[1].get_xlim()
@@ -744,6 +763,7 @@ def create_Figure4_supplement(thetas, ratios_L2M0, kick_angles):
         color=colors[0],
         lw=1.4,
         alpha=0.6,
+        zorder=np.inf - 1,
     )
     axis[1].set_xlim(xlim)
 
@@ -785,8 +805,22 @@ def create_Figure5_supplement(thetas, ratios_L2M0_pro_retro_mirror, qs):
     plt.subplots_adjust(hspace=0.02, wspace=0.02)
 
     result = axis[1].scatter(
-        thetas, ratios_L2M0_pro_retro_mirror[:, 0], c=qs, s=8, cmap="magma", vmax=8.5
+        [None] * len(qs), [None] * len(qs), c=qs, s=8, cmap="magma", vmax=8.5
     )
+
+    cm = plt.get_cmap("magma")
+    cNorm = mplcolors.Normalize(vmin=min(qs), vmax=8.5)
+    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
+    for i in range(len(thetas)):
+        markers, caps, bars = axis[1].errorbar(
+            thetas[i],
+            ratios_L2M0_pro_retro_mirror[:, 0][i],
+            yerr=ratios_L2M0_pro_retro_mirror[:, 1][i],
+            fmt="o",
+            markersize=np.sqrt(8),
+            color=scalarMap.to_rgba(qs[i]),
+        )
+        [bar.set_alpha(0.4) for bar in bars]
 
     axis[1].set_yscale("log")
     axis[1].set_xlim(0 - 0.2, np.pi + 0.2)
@@ -827,6 +861,7 @@ def create_Figure5_supplement(thetas, ratios_L2M0_pro_retro_mirror, qs):
         angles,
         rotation_factors,
         label=r"$\cfrac{\mathfrak{D}_{0,2}^{2,\pm}(\theta)}{\mathfrak{D}_{2,2}^{2,\pm}(\theta)}$",
+        zorder=np.inf,
     )
 
     xlim = axis[1].get_xlim()
@@ -837,6 +872,7 @@ def create_Figure5_supplement(thetas, ratios_L2M0_pro_retro_mirror, qs):
         color=colors[0],
         lw=1.4,
         alpha=0.6,
+        zorder=np.inf - 1,
     )
     axis[1].set_xlim(xlim)
 
@@ -845,7 +881,7 @@ def create_Figure5_supplement(thetas, ratios_L2M0_pro_retro_mirror, qs):
     axis[1].set_xlabel(r"misalignment angle $\theta$", fontsize=10)
     axis[1].set_ylabel(r"$A_{(\pm,2,0,0)}/A_{(\pm,2,\pm2,0)}$", fontsize=10)
 
-    axis[1].legend(loc="lower right", frameon=True, framealpha=1, fontsize=10)
+    axis[1].legend(loc="lower right", frameon=True, framealpha=1, fontsize=10).set_zorder(np.inf)
 
     c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
 
@@ -871,8 +907,27 @@ def create_Figure6_supplement(
     datas = [ratios_L3M2, ratios_L3M1, ratios_L3M0]
     for i, plot in enumerate(["B", "C", "D"]):
         result = axis[plot].scatter(
-            thetas, datas[i][:, 0], c=kick_angles, s=8, cmap="coolwarm"
+            [None] * len(kick_angles),
+            [None] * len(kick_angles),
+            c=kick_angles,
+            s=8,
+            cmap="coolwarm",
         )
+
+        cm = plt.get_cmap("coolwarm")
+        cNorm = mplcolors.Normalize(vmin=min(kick_angles), vmax=max(kick_angles))
+        scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
+        for j in range(len(thetas)):
+            markers, caps, bars = axis[plot].errorbar(
+                thetas[j],
+                datas[i][:, 0][j],
+                yerr=datas[i][:, 1][j],
+                fmt="o",
+                markersize=np.sqrt(8),
+                color=scalarMap.to_rgba(kick_angles[j]),
+            )
+            [bar.set_alpha(0.4) for bar in bars]
+
         axis[plot].set_yscale("log")
         axis[plot].set_xlim(0 - 0.2, np.pi + 0.2)
 
@@ -918,6 +973,7 @@ def create_Figure6_supplement(
             label=r"$\cfrac{\mathfrak{D}_{"
             + str(modes[i][1])
             + r",3}^{3}(\theta)}{\mathfrak{D}_{3,3}^{3}(\theta)}$",
+            zorder=np.inf,
         )
 
         xlim = axis[plot].get_xlim()
@@ -928,6 +984,7 @@ def create_Figure6_supplement(
             color=colors[0],
             lw=1.4,
             alpha=0.6,
+            zorder=np.inf - 1,
         )
         axis[plot].set_xlim(xlim)
 
@@ -983,8 +1040,26 @@ def create_Figure7_supplement(thetas, ratios_L2M2, kick_angles):
     plt.subplots_adjust(hspace=0.02, wspace=0.02)
 
     result = axis[1].scatter(
-        thetas, ratios_L2M2[:, 0], c=kick_angles, s=8, cmap="coolwarm"
+        [None] * len(kick_angles),
+        [None] * len(kick_angles),
+        c=kick_angles,
+        s=8,
+        cmap="coolwarm",
     )
+
+    cm = plt.get_cmap("coolwarm")
+    cNorm = mplcolors.Normalize(vmin=min(kick_angles), vmax=max(kick_angles))
+    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
+    for i in range(len(thetas)):
+        markers, caps, bars = axis[1].errorbar(
+            thetas[i],
+            ratios_L2M2[:, 0][i],
+            yerr=ratios_L2M2[:, 1][i],
+            fmt="o",
+            markersize=np.sqrt(8),
+            color=scalarMap.to_rgba(kick_angles[i]),
+        )
+        [bar.set_alpha(0.4) for bar in bars]
 
     axis[1].set_yscale("log")
     axis[1].set_xlim(0 - 0.2, np.pi + 0.2)
@@ -1016,6 +1091,7 @@ def create_Figure7_supplement(thetas, ratios_L2M2, kick_angles):
         color=colors[0],
         lw=1.4,
         alpha=0.6,
+        zorder=np.inf,
     )
     axis[1].set_xlim(xlim)
 
