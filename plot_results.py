@@ -142,7 +142,7 @@ def create_Figure1(
     cNorm = mplcolors.Normalize(vmin=min(qs), vmax=8.5)
     scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
     for i in range(len(thetas)):
-        axis[1][1].errorbar(
+        markers, caps, bars = axis[1][1].errorbar(
             thetas[i],
             ratios_B[:, 0][i],
             yerr=ratios_B[:, 1][i],
@@ -150,6 +150,7 @@ def create_Figure1(
             markersize=np.sqrt(8),
             color=scalarMap.to_rgba(qs[i]),
         )
+        [bar.set_alpha(0.4) for bar in bars]
 
     angles = np.linspace(0, np.pi, 100)
     rotation_factors = np.array(
@@ -170,6 +171,7 @@ def create_Figure1(
         angles,
         rotation_factors,
         label="rotation of\n spin-aligned\n perturbation",
+        zorder=np.inf,
     )
     axis[1][1].plot(
         [None],
@@ -185,6 +187,7 @@ def create_Figure1(
         color=colors[0],
         lw=1.4,
         alpha=0.6,
+        zorder=np.inf - 1,
     )
     axis[1][1].set_xlim(xlim)
 
@@ -271,7 +274,7 @@ def create_Figure2(
     cNorm = mplcolors.Normalize(vmin=min(kick_angles), vmax=max(kick_angles))
     scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
     for i in range(len(thetas)):
-        axis[1].errorbar(
+        markers, caps, bars = axis[1].errorbar(
             thetas[i],
             ratios_L2M1[:, 0][i],
             yerr=ratios_L2M1[:, 1][i],
@@ -279,6 +282,7 @@ def create_Figure2(
             markersize=np.sqrt(8),
             color=scalarMap.to_rgba(kick_angles[i]),
         )
+        [bar.set_alpha(0.4) for bar in bars]
 
     axis[1].set_yscale("log")
     axis[1].set_xlim(0 - 0.2, np.pi + 0.2)
@@ -311,6 +315,7 @@ def create_Figure2(
         angles,
         rotation_factors,
         label=r"$\cfrac{\mathfrak{D}_{1,2}^{2}(\theta)}{\mathfrak{D}_{2,2}^{2}(\theta)}$",
+        zorder=np.inf,
     )
 
     xlim = axis[1].get_xlim()
@@ -321,6 +326,7 @@ def create_Figure2(
         color=colors[0],
         lw=1.4,
         alpha=0.6,
+        zorder=np.inf - 1,
     )
     axis[1].set_xlim(xlim)
 
@@ -342,7 +348,7 @@ def create_Figure2(
     cNorm = mplcolors.Normalize(vmin=min(kick_angles), vmax=max(kick_angles))
     scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
     for i in range(len(thetas)):
-        axis[2].errorbar(
+        markers, caps, bars = axis[2].errorbar(
             thetas[i],
             pro_retro_ratios_L2M2[:, 0][i],
             yerr=pro_retro_ratios_L2M2[:, 1][i],
@@ -350,6 +356,7 @@ def create_Figure2(
             markersize=np.sqrt(8),
             color=scalarMap.to_rgba(kick_angles[i]),
         )
+        [bar.set_alpha(0.4) for bar in bars]
 
     axis[2].set_yscale("log")
     axis[2].set_xlim(0 - 0.2, np.pi + 0.2)
@@ -384,6 +391,7 @@ def create_Figure2(
         angles,
         rotation_factors,
         label=r"$\cfrac{\mathfrak{D}_{-2,2}^{2}(\theta)}{\mathfrak{D}_{2,2}^{2}(\theta)}$",
+        zorder=np.inf,
     )
 
     xlim = axis[2].get_xlim()
@@ -394,6 +402,7 @@ def create_Figure2(
         color=colors[0],
         lw=1.4,
         alpha=0.6,
+        zorder=np.inf - 1,
     )
     axis[2].set_xlim(xlim)
 
@@ -446,7 +455,7 @@ def create_Figure3(
     for i, mirror_mode_ratio in enumerate(mirror_mode_ratios):
         if ratio_spreads[i] in max_ratio_spreads:
             if ratio_spreads[i] == max_ratio_spreads[1]:
-                axis.errorbar(
+                markers, caps, bars = axis.errorbar(
                     x=np.arange(len(mirror_mode_ratio)),
                     y=mirror_mode_ratio,
                     yerr=mirror_mode_ratio_errors[i],
@@ -454,7 +463,7 @@ def create_Figure3(
                     color=colors[1],
                 )
             else:
-                axis.errorbar(
+                markers, caps, bars = axis.errorbar(
                     x=np.arange(len(mirror_mode_ratio)),
                     y=mirror_mode_ratio,
                     yerr=mirror_mode_ratio_errors[i],
@@ -464,8 +473,9 @@ def create_Figure3(
                     color=colors[1 + count],
                 )
                 count += 1
+            [bar.set_alpha(0.4) for bar in bars]
         elif ratio_spreads[i] == min_ratio_spread:
-            axis.errorbar(
+            markers, caps, bars = axis.errorbar(
                 x=np.arange(len(mirror_mode_ratio)),
                 y=mirror_mode_ratio,
                 yerr=mirror_mode_ratio_errors[i],
@@ -473,6 +483,7 @@ def create_Figure3(
                 zorder=np.inf,
                 lw=1.4,
             )
+            [bar.set_alpha(0.4) for bar in bars]
 
     axis.set_yscale("log")
 
