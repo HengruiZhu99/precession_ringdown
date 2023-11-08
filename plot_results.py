@@ -1030,7 +1030,7 @@ def create_Figure6_supplement(
     c.ax.set_xticklabels(
         [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
     )
-    c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=10, labelpad=-36)
+    c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=10, labelpad=-30)
 
     plt.savefig(f"CCEFigures/supplement_Figure6.pdf", bbox_inches="tight")
 
@@ -1119,7 +1119,7 @@ def create_Figure7_supplement(thetas, ratios_L2M2, kick_angles):
     c.ax.set_xticklabels(
         [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
     )
-    c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=10, labelpad=-36)
+    c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=10, labelpad=-30)
 
     plt.savefig(f"CCEFigures/supplement_Figure7.pdf", bbox_inches="tight")
 
