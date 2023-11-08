@@ -567,17 +567,21 @@ def create_Figure1_supplement(t, time_dependent_thetas, qs):
     plt.savefig(f"CCEFigures/supplement_Figure1.pdf", bbox_inches="tight")
 
 
-def create_Figure2_supplement(thetas, errors, qs):
+def create_Figure2_supplement(thetas, errors, chi_fs):
     fig, axis = plt.subplots(
         2, 1, figsize=(onecol_w_in, onecol_w_in * 0.88), height_ratios=[0.05, 1.0]
     )
     plt.subplots_adjust(hspace=0.02, wspace=0.02)
 
     result = axis[1].scatter(
-        thetas, qs, c=np.log10(np.sqrt(2.0 * errors)), s=40, cmap="viridis"
+        chi_fs, np.sqrt(2.0 * errors), c=thetas, s=8, cmap="viridis"
     )
 
-    axis[1].set_xticks(
+    axis[1].set_yscale('log')
+
+    c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
+
+    c.ax.set_xticks(
         [
             0.0,
             np.pi / 8,
@@ -590,19 +594,17 @@ def create_Figure2_supplement(thetas, errors, qs):
             np.pi,
         ]
     )
-    axis[1].set_xticklabels(
+    c.ax.set_xticklabels(
         [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
     )
 
-    c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
-
     c.ax.xaxis.set_ticks_position("top")
     c.ax.set_xlabel(
-        r"$\log_{10}\Big($" + "relative error" + "$\Big)$", fontsize=10, labelpad=-40
+        r"misalignment angle $\theta$", fontsize=10, labelpad=-30
     )
 
-    axis[1].set_xlabel(r"misalignment angle $\theta$", fontsize=10)
-    axis[1].set_ylabel(r"mass ratio $q$", fontsize=10)
+    axis[1].set_xlabel(r"$\chi_{f}$", fontsize=10)
+    axis[1].set_ylabel(r"relative error of QNM fit", fontsize=10)
 
     plt.savefig(f"CCEFigures/supplement_Figure2.pdf", bbox_inches="tight")
 
@@ -1095,8 +1097,8 @@ def create_Figure7_supplement(thetas, ratios_L2M2, kick_angles):
     )
     axis[1].set_xlim(xlim)
 
-    axis[1].set_xlabel(r"misalignment angle $\theta$", fontsize=12)
-    axis[1].set_ylabel(r"$A_{(+,2,-2,0)}/A_{(+,2,2,0)}$", fontsize=12)
+    axis[1].set_xlabel(r"misalignment angle $\theta$", fontsize=10)
+    axis[1].set_ylabel(r"$A_{(+,2,-2,0)}/A_{(+,2,2,0)}$", fontsize=10)
 
     c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
 
@@ -1117,7 +1119,7 @@ def create_Figure7_supplement(thetas, ratios_L2M2, kick_angles):
     c.ax.set_xticklabels(
         [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
     )
-    c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=12, labelpad=-36)
+    c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=10, labelpad=-36)
 
     plt.savefig(f"CCEFigures/supplement_Figure7.pdf", bbox_inches="tight")
 
@@ -1343,6 +1345,7 @@ def main():
 
     # Construct relevant arrays for ratios, parameters, etc.
     qs = []
+    chi_fs = []
     chi_ps = []
 
     thetas = []
@@ -1382,6 +1385,8 @@ def main():
     for i, simulation in enumerate(data):
         q = data[simulation]["q"]
         qs.append(q)
+
+        chi_fs.append(data[simulation]["chi_f"])
 
         chi1 = data[simulation]["chi1"]
         chi2 = data[simulation]["chi2"]
@@ -1573,7 +1578,7 @@ def main():
 
     create_Figure1_supplement(np.arange(-1000, 250, 0.1), time_dependent_thetas, qs)
 
-    create_Figure2_supplement(thetas, errors, qs)
+    create_Figure2_supplement(thetas, errors, chi_fs)
 
     create_Figure3_supplement(thetas, chi_ps, qs)
 
