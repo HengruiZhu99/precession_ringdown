@@ -192,7 +192,7 @@ def create_Figure1(
     axis[1][1].set_xlim(xlim)
 
     x = 3.05
-    y = 5.8e-1
+    y = 5.92e-1
     ell_offset = ScaledTranslation(x, y, axis[1][1].transScale)
     ell_tform = ell_offset + axis[1][1].transLimits + axis[1][1].transAxes
     axis[1][1].add_patch(
