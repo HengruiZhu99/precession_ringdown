@@ -76,9 +76,7 @@ def compute_rotation_factor(input_mode, output_mode, theta):
 
 
 # Figure 1
-def create_Figure1(
-    qs, thetas, ratios_A, ratios_B, inset_fig=True, filename="Figure1.pdf"
-):
+def create_Figure1(qs, thetas, ratios_L2M1_mirror, ratios_L2M1_pro_retro_mirror):
     fig, axis = plt.subplots(
         2,
         2,
@@ -92,7 +90,7 @@ def create_Figure1(
     # panel A
 
     result = axis[1][0].scatter(
-        thetas, qs, s=8, c=np.log10(ratios_A[:, 0]), cmap="viridis"
+        thetas, qs, s=8, c=np.log10(ratios_L2M1_mirror[:, 0]), cmap="viridis"
     )
 
     axis[1][0].set_xlabel(r"misalignment angle $\theta$", fontsize=10)
@@ -124,13 +122,12 @@ def create_Figure1(
         labelpad=-36,
     )
 
-    if inset_fig:
-        im = plt.imread("CCEFigures/SpinMisalignmentCartoon.jpeg")
-        newax = fig.add_axes([0.185, 0.145, 0.26, 0.26], anchor="NE", zorder=1)
-        newax.imshow(im)
-        newax.get_xaxis().set_ticks([])
-        newax.get_yaxis().set_ticks([])
-        plt.setp(newax.spines.values(), color="lightgrey")
+    im = plt.imread("CCEFigures/SpinMisalignmentCartoon.jpeg")
+    newax = fig.add_axes([0.185, 0.145, 0.26, 0.26], anchor="NE", zorder=1)
+    newax.imshow(im)
+    newax.get_xaxis().set_ticks([])
+    newax.get_yaxis().set_ticks([])
+    plt.setp(newax.spines.values(), color="lightgrey")
 
     # panel B
 
@@ -144,8 +141,8 @@ def create_Figure1(
     for i in range(len(thetas)):
         markers, caps, bars = axis[1][1].errorbar(
             thetas[i],
-            ratios_B[:, 0][i],
-            yerr=ratios_B[:, 1][i],
+            ratios_L2M1_pro_retro_mirror[:, 0][i],
+            yerr=ratios_L2M1_pro_retro_mirror[:, 1][i],
             fmt="o",
             markersize=np.sqrt(8),
             color=scalarMap.to_rgba(qs[i]),
@@ -250,7 +247,7 @@ def create_Figure1(
     c2.ax.xaxis.set_ticks([1, 2, 3, 4, 5, 6, 7, 8])
     c2.ax.set_xlabel(r"mass ratio $q$", fontsize=10, labelpad=-36)
 
-    plt.savefig(f"CCEFigures/{filename}", bbox_inches="tight")
+    plt.savefig(f"CCEFigures/Figure1.pdf", bbox_inches="tight")
 
 
 # Figure 2
@@ -577,7 +574,7 @@ def create_Figure2_supplement(thetas, errors, chi_fs):
         chi_fs, np.sqrt(2.0 * errors), c=thetas, s=8, cmap="viridis"
     )
 
-    axis[1].set_yscale('log')
+    axis[1].set_yscale("log")
 
     c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
 
@@ -599,9 +596,7 @@ def create_Figure2_supplement(thetas, errors, chi_fs):
     )
 
     c.ax.xaxis.set_ticks_position("top")
-    c.ax.set_xlabel(
-        r"misalignment angle $\theta$", fontsize=10, labelpad=-30
-    )
+    c.ax.set_xlabel(r"misalignment angle $\theta$", fontsize=10, labelpad=-30)
 
     axis[1].set_xlabel(r"$\chi_{f}$", fontsize=10)
     axis[1].set_ylabel(r"relative error of QNM fit", fontsize=10)
@@ -883,7 +878,9 @@ def create_Figure5_supplement(thetas, ratios_L2M0_pro_retro_mirror, qs):
     axis[1].set_xlabel(r"misalignment angle $\theta$", fontsize=10)
     axis[1].set_ylabel(r"$A_{(\pm,2,0,0)}/A_{(\pm,2,\pm2,0)}$", fontsize=10)
 
-    axis[1].legend(loc="lower right", frameon=True, framealpha=1, fontsize=10).set_zorder(np.inf)
+    axis[1].legend(
+        loc="lower right", frameon=True, framealpha=1, fontsize=10
+    ).set_zorder(np.inf)
 
     c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
 
@@ -1124,6 +1121,104 @@ def create_Figure7_supplement(thetas, ratios_L2M2, kick_angles):
     plt.savefig(f"CCEFigures/supplement_Figure7.pdf", bbox_inches="tight")
 
 
+def create_Figure8_supplement(thetas, asymms, kick_angles):
+    fig, axis = plt.subplots(
+        4,
+        1,
+        figsize=(onecol_w_in, onecol_w_in * 0.88),
+        height_ratios=[0.108, 1.0, 0.1, 1.0],
+    )
+    plt.subplots_adjust(hspace=0.05, wspace=0.02)
+
+    result = axis[1].scatter(
+        [None] * len(kick_angles),
+        [None] * len(kick_angles),
+        c=kick_angles,
+        s=8,
+        cmap="viridis",
+    )
+
+    axis[2].set_visible(False)
+
+    axis[1].spines.bottom.set_visible(False)
+    axis[3].spines.top.set_visible(False)
+    axis[1].xaxis.tick_top()
+    axis[1].tick_params(labeltop=False)
+    axis[3].xaxis.tick_bottom()
+
+    d = 0.5  # proportion of vertical to horizontal extent of the slanted line
+    kwargs = dict(
+        marker=[(-1, -d), (1, d)],
+        markersize=10,
+        linestyle="none",
+        color="k",
+        mec="k",
+        mew=1,
+        clip_on=False,
+    )
+    axis[1].plot([0, 1], [0, 0], transform=axis[1].transAxes, **kwargs)
+    axis[3].plot([0, 1], [1, 1], transform=axis[3].transAxes, **kwargs)
+
+    cm = plt.get_cmap("cividis")
+    cNorm = mplcolors.Normalize(vmin=min(kick_angles), vmax=max(kick_angles))
+    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
+
+    for k in [1, 3]:
+        for i in range(len(thetas)):
+            markers, caps, bars = axis[k].errorbar(
+                thetas[i],
+                asymms[:, 0][i],
+                yerr=asymms[:, 1][i],
+                fmt="o",
+                markersize=np.sqrt(8),
+                color=scalarMap.to_rgba(kick_angles[i]),
+            )
+            [bar.set_alpha(0.4) for bar in bars]
+
+        axis[k].set_yscale("log")
+        axis[k].set_xlim(0 - 0.2, np.pi + 0.2)
+
+        axis[k].set_xticks(
+            [
+                0.0,
+                np.pi / 8,
+                2 * np.pi / 8,
+                3 * np.pi / 8,
+                4 * np.pi / 8,
+                5 * np.pi / 8,
+                6 * np.pi / 8,
+                7 * np.pi / 8,
+                np.pi,
+            ]
+        )
+        axis[k].set_xticklabels(
+            [
+                r"$0$",
+                None,
+                r"$\pi/4$",
+                None,
+                r"$\pi/2$",
+                None,
+                r"$3\pi/4$",
+                None,
+                r"$\pi$",
+            ]
+        )
+
+    axis[1].set_ylim(bottom=2e-2)
+    axis[3].set_ylim(top=6e-5)
+
+    axis[3].set_xlabel(r"misalignment angle $\theta$", fontsize=10)
+    axis[3].set_ylabel(r"asymmetry over the orbital plane", fontsize=10, y=1.1)
+
+    c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
+
+    c.ax.xaxis.set_ticks_position("top")
+    c.ax.set_xlabel(r"kick rapidity", fontsize=10, labelpad=-30)
+
+    plt.savefig(f"CCEFigures/supplement_Figure8.pdf", bbox_inches="tight")
+
+
 def compute_mode_amplitude(data, mode, pro_retro=False, mirror=False):
     """
     Compute the QNM amplitude and standard deviation from the complex amplitude obtained from fitting.
@@ -1271,26 +1366,38 @@ def compute_asymmetry_statistics(data):
     Compute the violation of the orbital plane symmetry.
     """
     asymms = []
+
+    power = 0
+    power_std = 0
+    asymmetry_S2 = 0
+    asymmetry_S2_std = 0
     for L in range(2, 3 + 1):
-        for M in range(1, L + 1):
+        for M in range(-L, L + 1):
+            sign_M = np.sign(M)
+            if sign_M == 0:
+                sign_M = 1
             # positive M
             A_mode_p_pro = (
-                data[str((L, M, 0, 1)).replace(" ", "")]["A"][0]
-                + 1j * data[str((L, M, 0, 1)).replace(" ", "")]["A"][1]
+                data[str((L, M, 0, sign_M)).replace(" ", "")]["A"][0]
+                + 1j * data[str((L, M, 0, sign_M)).replace(" ", "")]["A"][1]
             )
-            A_mode_p_pro_std_re = data[str((L, M, 0, 1)).replace(" ", "")]["A_std"][0]
-            A_mode_p_pro_std_im = data[str((L, M, 0, 1)).replace(" ", "")]["A_std"][1]
+            A_mode_p_pro_std_re = data[str((L, M, 0, sign_M)).replace(" ", "")][
+                "A_std"
+            ][0]
+            A_mode_p_pro_std_im = data[str((L, M, 0, sign_M)).replace(" ", "")][
+                "A_std"
+            ][1]
 
             A_mode_p_retro = (
-                data[str((L, M, 0, -1)).replace(" ", "")]["A"][0]
-                + 1j * data[str((L, M, 0, -1)).replace(" ", "")]["A"][1]
+                data[str((L, M, 0, -sign_M)).replace(" ", "")]["A"][0]
+                + 1j * data[str((L, M, 0, -sign_M)).replace(" ", "")]["A"][1]
             )
-            A_mode_p_retro_std_re = data[str((L, M, 0, -1)).replace(" ", "")]["A_std"][
-                0
-            ]
-            A_mode_p_retro_std_im = data[str((L, M, 0, -1)).replace(" ", "")]["A_std"][
-                1
-            ]
+            A_mode_p_retro_std_re = data[str((L, M, 0, -sign_M)).replace(" ", "")][
+                "A_std"
+            ][0]
+            A_mode_p_retro_std_im = data[str((L, M, 0, -sign_M)).replace(" ", "")][
+                "A_std"
+            ][1]
 
             A_mode_p = A_mode_p_pro + A_mode_p_retro
             A_mode_p_std_re = np.sqrt(
@@ -1300,24 +1407,32 @@ def compute_asymmetry_statistics(data):
                 (A_mode_p_pro_std_im**2 + A_mode_p_retro_std_im**2)
             )
 
+            A_mode_p_std = np.sqrt(
+                A_mode_p_pro_std_re**2 + A_mode_p_retro_std_re**2
+            )
+
             # negative M
             A_mode_n_pro = (
-                data[str((L, -M, 0, -1)).replace(" ", "")]["A"][0]
-                + 1j * data[str((L, -M, 0, -1)).replace(" ", "")]["A"][1]
+                data[str((L, -M, 0, -sign_M)).replace(" ", "")]["A"][0]
+                + 1j * data[str((L, -M, 0, -sign_M)).replace(" ", "")]["A"][1]
             )
-            A_mode_n_pro_std_re = data[str((L, -M, 0, -1)).replace(" ", "")]["A_std"][0]
-            A_mode_n_pro_std_im = data[str((L, -M, 0, -1)).replace(" ", "")]["A_std"][1]
+            A_mode_n_pro_std_re = data[str((L, -M, 0, -sign_M)).replace(" ", "")][
+                "A_std"
+            ][0]
+            A_mode_n_pro_std_im = data[str((L, -M, 0, -sign_M)).replace(" ", "")][
+                "A_std"
+            ][1]
 
             A_mode_n_retro = (
-                data[str((L, -M, 0, 1)).replace(" ", "")]["A"][0]
-                + 1j * data[str((L, -M, 0, 1)).replace(" ", "")]["A"][1]
+                data[str((L, -M, 0, sign_M)).replace(" ", "")]["A"][0]
+                + 1j * data[str((L, -M, 0, sign_M)).replace(" ", "")]["A"][1]
             )
-            A_mode_n_retro_std_re = data[str((L, -M, 0, 1)).replace(" ", "")]["A_std"][
-                0
-            ]
-            A_mode_n_retro_std_im = data[str((L, -M, 0, 1)).replace(" ", "")]["A_std"][
-                1
-            ]
+            A_mode_n_retro_std_re = data[str((L, -M, 0, sign_M)).replace(" ", "")][
+                "A_std"
+            ][0]
+            A_mode_n_retro_std_im = data[str((L, -M, 0, sign_M)).replace(" ", "")][
+                "A_std"
+            ][1]
 
             A_mode_n = A_mode_n_pro + A_mode_n_retro
             A_mode_n_std_re = np.sqrt(
@@ -1327,15 +1442,29 @@ def compute_asymmetry_statistics(data):
                 (A_mode_n_pro_std_im**2 + A_mode_n_retro_std_im**2)
             )
 
-            asymm = abs(A_mode_p) - abs((-1) ** L * np.conjugate(A_mode_n))
-            asymm_std = np.sqrt(
-                (A_mode_p_std_re**2 + A_mode_p_std_im**2)
-                + (A_mode_n_std_re**2 + A_mode_n_std_im**2)
-            )
+            A_mode_n_std = np.sqrt(A_mode_n_std_re**2 + A_mode_n_std_im**2)
 
-            asymms.append(asymm)
+            asymm = abs(A_mode_p - (-1) ** L * np.conjugate(A_mode_n))
+            asymm_std = np.sqrt(A_mode_p_std**2 + A_mode_n_std**2)
 
-    return np.array(asymms)
+            power += abs(A_mode_p) ** 2
+            power_std += abs(A_mode_p) ** 2 * A_mode_p_std**2
+
+            asymmetry_S2 += asymm**2
+            asymmetry_S2_std += asymm**2 * asymm_std**2
+
+    power = np.sqrt(power)
+    power_std = 1.0 / power * np.sqrt(power_std)
+
+    asymmetry_S2 = np.sqrt(asymmetry_S2)
+    asymmetr_S2_std = 1.0 / asymmetry_S2 * np.sqrt(asymmetry_S2_std)
+
+    final_asymmetry_S2 = np.sqrt(asymmetry_S2**2 / (4.0 * power**2))
+    final_asymmetry_S2_std = final_asymmetry_S2 * np.sqrt(
+        (asymmetry_S2_std / asymmetry_S2) ** 2 + (power_std / power) ** 2
+    )
+
+    return final_asymmetry_S2, final_asymmetry_S2_std
 
 
 def main():
@@ -1350,6 +1479,7 @@ def main():
 
     thetas = []
     kick_angles = []
+    kick_rapidities = []
 
     errors = []
     mismatches = []
@@ -1399,6 +1529,7 @@ def main():
 
         thetas.append(data[simulation]["theta"])
         kick_angles.append(data[simulation]["kick theta"])
+        kick_rapidities.append(data[simulation]["kick rapidity"])
 
         errors.append(data[simulation]["error"])
         mismatches.append(data[simulation]["mismatch"])
@@ -1521,6 +1652,7 @@ def main():
 
     thetas = np.array(thetas)
     kick_angles = np.array(kick_angles)
+    kick_rapidities = np.array(kick_rapidities)
 
     errors = np.array(errors)
     mismatches = np.array(mismatches)
@@ -1531,10 +1663,13 @@ def main():
         return round(x, -int(np.floor(np.log10(x))) + (n - 1))
 
     print(f"Max Error: {round_to_n(100*max(np.sqrt(2*errors)), 3)}%")
-    print(f"Average Error: {round_to_n(100*np.mean(np.sqrt(2*errors)), 3)}%")
+    print(
+        f"Average Error: {round_to_n(100*np.mean(np.sqrt(2*errors)), 3)}%, {round_to_n(np.std(np.sqrt(2*errors)), 3)}"
+    )
     print(f"Average t0: {round_to_n(np.mean(t0s), 3)}, {round_to_n(np.std(t0s), 3)}")
     print(f"Max CV: {round_to_n(100*max(CVs), 3)}%")
     print(f"Average CV: {round_to_n(100*np.mean(CVs), 3)}%")
+    print(f"Median CV: {round_to_n(100*np.median(CVs), 3)}%")
 
     ratios_L2M2 = np.array(ratios_L2M2)
 
@@ -1567,7 +1702,6 @@ def main():
         thetas,
         ratios_L2M1_mirror,
         ratios_L2M1_pro_retro_mirror,
-        filename="Figure1.pdf",
     )
 
     create_Figure2(thetas, ratios_L2M1, pro_retro_ratios_L2M2, kick_angles)
@@ -1591,6 +1725,8 @@ def main():
     )
 
     create_Figure7_supplement(thetas, ratios_L2M2, kick_angles)
+
+    create_Figure8_supplement(thetas, asymms, kick_rapidities)
 
 
 if __name__ == "__main__":
