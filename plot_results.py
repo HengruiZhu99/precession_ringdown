@@ -5,6 +5,8 @@ import numpy as np
 import quaternion
 import spherical_functions as sf
 
+from quaternion.calculus import derivative
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
@@ -1121,7 +1123,7 @@ def create_Figure7_supplement(thetas, ratios_L2M2, kick_angles):
     plt.savefig(f"CCEFigures/supplement_Figure7.pdf", bbox_inches="tight")
 
 
-def create_Figure8_supplement(thetas, asymms, kick_angles):
+def create_Figure8_supplement(thetas, asymms, kick_rapidities):
     fig, axis = plt.subplots(
         4,
         1,
@@ -1131,11 +1133,15 @@ def create_Figure8_supplement(thetas, asymms, kick_angles):
     plt.subplots_adjust(hspace=0.05, wspace=0.02)
 
     result = axis[1].scatter(
-        [None] * len(kick_angles),
-        [None] * len(kick_angles),
-        c=kick_angles,
+        [None] * len(thetas),
+        [None] * len(thetas),
+        c=kick_rapidities,
         s=8,
-        cmap="viridis",
+        cmap="cividis",
+        norm=mpl.colors.LogNorm(
+            vmin=1e-4,
+            vmax=max(kick_rapidities)
+        )
     )
 
     axis[2].set_visible(False)
@@ -1160,7 +1166,7 @@ def create_Figure8_supplement(thetas, asymms, kick_angles):
     axis[3].plot([0, 1], [1, 1], transform=axis[3].transAxes, **kwargs)
 
     cm = plt.get_cmap("cividis")
-    cNorm = mplcolors.Normalize(vmin=min(kick_angles), vmax=max(kick_angles))
+    cNorm = mplcolors.LogNorm(vmin=1e-4, vmax=max(kick_rapidities))
     scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
 
     for k in [1, 3]:
@@ -1171,7 +1177,7 @@ def create_Figure8_supplement(thetas, asymms, kick_angles):
                 yerr=asymms[:, 1][i],
                 fmt="o",
                 markersize=np.sqrt(8),
-                color=scalarMap.to_rgba(kick_angles[i]),
+                color=scalarMap.to_rgba(kick_rapidities[i]),
             )
             [bar.set_alpha(0.4) for bar in bars]
 
@@ -1696,6 +1702,8 @@ def main():
     ratios_L3M0 = np.array(ratios_L3M0)
 
     time_dependent_thetas = np.array(time_dependent_thetas)
+
+    dthetas = derivative(time_dependent_thetas, np.arange(-1000, 250, 0.1), axis=1)[:,np.argmin(abs(np.arange(-1000, 250, 0.1) - 0))]
 
     create_Figure1(
         qs,
