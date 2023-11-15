@@ -1215,7 +1215,7 @@ def create_Figure8_supplement(thetas, asymms, kick_rapidities):
     axis[3].set_ylim(top=6e-5)
 
     axis[3].set_xlabel(r"misalignment angle $\theta$", fontsize=10)
-    axis[3].set_ylabel(r"asymmetry over the orbital plane", fontsize=10, y=1.1)
+    axis[3].set_ylabel(r"parity breaking of $\pm m$ QNMs", fontsize=10, y=1.1)
 
     c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
 
