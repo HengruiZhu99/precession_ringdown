@@ -201,6 +201,8 @@ def create_Figure1(qs, thetas, ratios_L2M1_mirror, ratios_L2M1_pro_retro_mirror)
 
     _, rotation_factors = rotation_factor_theory(8, 0)
     axis[1][1].plot(angles, rotation_factors, zorder=np.inf, color="blue")
+    _, rotation_factors = rotation_factor_theory(8, -0.6)
+    axis[1][1].plot(angles, rotation_factors, zorder=np.inf, color="green")
 
     axis[1][1].plot(
         [None],
