@@ -77,6 +77,32 @@ def compute_rotation_factor(input_mode, output_mode, theta):
     return sf.Wigner_D_element(R, input_mode[0], output_mode[1], input_mode[1])
 
 
+def rotation_factor_theory(q, chi_eff=0):
+    nu = q / (1 + q) ** 2
+    ratio = 0.43 * (np.sqrt(1 - 4 * nu) - chi_eff)
+
+    angles = np.linspace(0, np.pi, 100)
+    rotation_factors = np.array(
+        [
+            np.sqrt(
+                ratio * compute_rotation_factor((2, 1), (2, 1), angle) ** 2
+                + ratio * compute_rotation_factor((2, 1), (2, -1), angle) ** 2
+                + compute_rotation_factor((2, 2), (2, 1), angle) ** 2
+                + compute_rotation_factor((2, 2), (2, -1), angle) ** 2
+            )
+            / np.sqrt(
+                ratio * compute_rotation_factor((2, 1), (2, 1), angle) ** 2
+                + ratio * compute_rotation_factor((2, 1), (2, -1), angle) ** 2
+                + compute_rotation_factor((2, 2), (2, 2), angle) ** 2
+                + compute_rotation_factor((2, 2), (2, -2), angle) ** 2
+            )
+            for angle in angles
+        ]
+    )
+
+    return angles, rotation_factors
+
+
 # Figure 1
 def create_Figure1(qs, thetas, ratios_L2M1_mirror, ratios_L2M1_pro_retro_mirror):
     fig, axis = plt.subplots(
@@ -172,6 +198,10 @@ def create_Figure1(qs, thetas, ratios_L2M1_mirror, ratios_L2M1_pro_retro_mirror)
         label="rotation of\n spin-aligned\n perturbation",
         zorder=np.inf,
     )
+
+    _, rotation_factors = rotation_factor_theory(8, 0)
+    axis[1][1].plot(angles, rotation_factors, zorder=np.inf, color="blue")
+
     axis[1][1].plot(
         [None],
         [None],
@@ -1138,10 +1168,7 @@ def create_Figure8_supplement(thetas, asymms, kick_rapidities):
         c=kick_rapidities,
         s=8,
         cmap="cividis",
-        norm=mpl.colors.LogNorm(
-            vmin=1e-4,
-            vmax=max(kick_rapidities)
-        )
+        norm=mpl.colors.LogNorm(vmin=1e-4, vmax=max(kick_rapidities)),
     )
 
     axis[2].set_visible(False)
@@ -1516,8 +1543,6 @@ def main():
     ratios_L3M1 = []
     ratios_L3M0 = []
 
-    time_dependent_thetas = []
-
     for i, simulation in enumerate(data):
         q = data[simulation]["q"]
         qs.append(q)
@@ -1533,7 +1558,7 @@ def main():
         chi_p = max(np.linalg.norm(chi1[:2]), np.linalg.norm(chi2[:2]))
         chi_ps.append(chi_p)
 
-        thetas.append(data[simulation]["theta"])
+        thetas.append(data[simulation]["theta_from_LL_strain"])
         kick_angles.append(data[simulation]["kick theta"])
         kick_rapidities.append(data[simulation]["kick rapidity"])
 
@@ -1648,11 +1673,6 @@ def main():
             )
         )
 
-        if len(data[simulation]["thetas"]) == len(np.arange(-1000, 250, 0.1)):
-            time_dependent_thetas.append(data[simulation]["thetas"])
-        else:
-            time_dependent_thetas.append([None] * len(np.arange(-1000, 250, 0.1)))
-
     qs = np.array(qs)
     chi_ps = np.array(chi_ps)
 
@@ -1701,10 +1721,6 @@ def main():
     ratios_L3M1 = np.array(ratios_L3M1)
     ratios_L3M0 = np.array(ratios_L3M0)
 
-    time_dependent_thetas = np.array(time_dependent_thetas)
-
-    dthetas = derivative(time_dependent_thetas, np.arange(-1000, 250, 0.1), axis=1)[:,np.argmin(abs(np.arange(-1000, 250, 0.1) - 0))]
-
     create_Figure1(
         qs,
         thetas,
@@ -1718,7 +1734,7 @@ def main():
         list(data.keys()), mirror_mode_ratios, mirror_mode_ratio_errors, N_systems=6
     )
 
-    create_Figure1_supplement(np.arange(-1000, 250, 0.1), time_dependent_thetas, qs)
+    # create_Figure1_supplement(np.arange(-1000, 250, 0.1), time_dependent_thetas, qs)
 
     create_Figure2_supplement(thetas, errors, chi_fs)
 
