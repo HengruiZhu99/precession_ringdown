@@ -4,8 +4,6 @@ import numpy as np
 import spherical_functions as sf
 from scri.sample_waveforms import modes_constructor
 
-from varpro import varpro
-
 from scipy.integrate import trapezoid
 from scipy import linalg
 from scipy.sparse import spdiags
@@ -186,10 +184,7 @@ def qnm_modes(chi, mass, mode_dict, dest=None, t_0=0.0, t_ref=0.0, **kwargs):
 
                         A = term["A"]
 
-                        if t[i] < t_0:
-                            expiwt = 0.0
-                        else:
-                            expiwt = np.exp(complex(0.0, -1.0) * omega * (t[i] - t_ref))
+                        expiwt = np.exp(complex(0.0, -1.0) * omega * (t[i] - t_ref))
                         for _l, _m in LM:
                             if _m == m:
                                 c_l = C[ells == _l]
@@ -206,7 +201,6 @@ def qnm_modes(chi, mass, mode_dict, dest=None, t_0=0.0, t_ref=0.0, **kwargs):
                     A = term["A"]
 
                     expiwt = np.exp(complex(0.0, -1.0) * omega * (t - t_ref))
-                    expiwt[t < t_0] = 0.0
                     for _l, _m in LM:
                         if _m == m:
                             c_l = C[ells == _l]
@@ -222,7 +216,6 @@ def qnm_modes(chi, mass, mode_dict, dest=None, t_0=0.0, t_ref=0.0, **kwargs):
                 A = term["A"]
 
                 expiwt = np.exp(complex(0.0, -1.0) * omega * (t - t_ref))
-                expiwt[t < t_0] = 0.0
                 data[
                     :,
                     sf.LM_index(
@@ -299,122 +292,6 @@ def qnm_modes_as(
         ell_max=ell_max,
         **kwargs
     )
-
-
-def fit_ringdown_waveform_functions(t, fixed_QNMs, free_QNMs, t_ref=0):
-    """QNM fitting function for varpro.
-    Computes Phi (the QNM waveform) and
-    dPhi (the derivative of the QNM waveform w.r.t. nonlinear parameters).
-
-    (see fit_ringdown_waveform for more details).
-
-    """
-    N_fixed = len(fixed_QNMs) // 2
-    N_free = len(free_QNMs) // 2
-    N = N_fixed + N_free
-
-    omegas = [fixed_QNMs[2 * i] + 1j * fixed_QNMs[2 * i + 1] for i in range(N_fixed)]
-    omegas += [free_QNMs[2 * i] + 1j * free_QNMs[2 * i + 1] for i in range(N_free)]
-
-    # Construct Phi, with the four terms (per QNM) decomposed as
-    # QNM = term1 + term2 + term3 + term4, where term1 and term2 are the real components
-    # and term 3 and term 4 are the imaginary components. Specifically, these are
-    # (a + i * b) * exp(-i \omega t)] =
-    # a Re[exp(-i \omega t)] - b * Im[exp(-i \omega t)] +
-    # i * (a * Im[exp(-i \omega t)] + b * Im[exp(-i \omega t)]).
-    # We will put the real terms in the 1st part of Phi, and the imaginary terms in the 2nd part
-    Phi = np.zeros((2 * t.size, 2 * N))
-    for i in range(N):
-        # re
-        # term 1
-        Phi[: t.size, 2 * i] = np.real(np.exp(-1j * omegas[i] * (t - t_ref)))
-        # term 2
-        Phi[: t.size, 2 * i + 1] = -np.imag(np.exp(-1j * omegas[i] * (t - t_ref)))
-        # im
-        # term 3
-        Phi[t.size :, 2 * i] = np.imag(np.exp(-1j * omegas[i] * (t - t_ref)))
-        # term 4
-        Phi[t.size :, 2 * i + 1] = np.real(np.exp(-1j * omegas[i] * (t - t_ref)))
-
-    # We have 4*N terms per Phi entry (4 terms (see above))
-    # and 2*N_free parameters, since each frequency has a real and imaginary part.
-    # So there Phi must be of length (4*N)*(2*N_free).
-    # We'll order the nonlinear parameter dependence in the trivial way, i.e., 0, 1, 2, ...
-    # but with the fixed QNMs first.
-    Ind = np.array(
-        [
-            [i // (2 * N_free) for i in range((2 * N) * (2 * N_free))],
-            (2 * N) * list(np.arange(2 * N_free)),
-        ]
-    )
-
-    # Construct dPhi, where each of the 4 terms (per QNM), if the QNM is free, has two components.
-    dPhi = np.zeros((2 * t.size, (2 * N) * (2 * N_free)))
-    # Loop over freqs
-    for freq in range(N):
-        # Loop over terms in real and imaginary parts,
-        # i.e., if term == 0 then we're considering term1 and term3
-        # while if term == 1 then we're considering term2 and term4
-        for term in range(2):
-            # Loop over the number of freq_derivs we have to take
-            # which is just the number of free QNMs
-            for freq_deriv in range(N_free):
-                # shift to current QNM, shift to current term, shift to current frequency
-                idx = (2 * N_free) * (2 * freq) + (2 * N_free) * term + 2 * freq_deriv
-
-                # First, set the dPhi terms to zero when they correspond to a QNM w/ fixed frequency
-                if freq - N_fixed != freq_deriv:
-                    # term1/term2
-                    # deriv w.r.t real part of freq
-                    dPhi[: t.size, idx] = 0
-                    # deriv w.r.t imag part of freq
-                    dPhi[: t.size, idx + 1] = 0
-                    # term3/term4
-                    # deriv w.r.t real part of freq
-                    dPhi[t.size :, idx] = 0
-                    # deriv w.r.t imag part of freq
-                    dPhi[t.size :, idx + 1] = 0
-                else:
-                    if term == 0:
-                        # term 1
-                        # deriv w.r.t real part of freq
-                        dPhi[: t.size, idx] = np.real(
-                            -1j * t * np.exp(-1j * omegas[freq] * (t - t_ref))
-                        )
-                        # deriv w.r.t imag part of freq
-                        dPhi[: t.size, idx + 1] = np.real(
-                            -1j * 1j * t * np.exp(-1j * omegas[freq] * (t - t_ref))
-                        )
-                        # term 3
-                        # deriv w.r.t real part of freq
-                        dPhi[t.size :, idx] = np.imag(
-                            -1j * t * np.exp(-1j * omegas[freq] * (t - t_ref))
-                        )
-                        # deriv w.r.t imag part of freq
-                        dPhi[t.size :, idx + 1] = np.imag(
-                            -1j * 1j * t * np.exp(-1j * omegas[freq] * (t - t_ref))
-                        )
-                    else:
-                        # term 2
-                        # deriv w.r.t real part of freq
-                        dPhi[: t.size, idx] = -np.imag(
-                            -1j * t * np.exp(-1j * omegas[freq] * (t - t_ref))
-                        )
-                        # deriv w.r.t imag part of freq
-                        dPhi[: t.size, idx + 1] = -np.imag(
-                            -1j * 1j * t * np.exp(-1j * omegas[freq] * (t - t_ref))
-                        )
-                        # term 4
-                        # deriv w.r.t real part of freq
-                        dPhi[t.size :, idx] = np.real(
-                            -1j * t * np.exp(-1j * omegas[freq] * (t - t_ref))
-                        )
-                        # deriv w.r.t imag part of freq
-                        dPhi[t.size :, idx + 1] = np.real(
-                            -1j * 1j * t * np.exp(-1j * omegas[freq] * (t - t_ref))
-                        )
-
-    return Phi, dPhi, Ind
 
 
 def fit_ringdown_waveform_LLSQ_S2(
@@ -676,7 +553,6 @@ def fit_ringdown_waveform(
     chi_f,
     M_f,
     fixed_QNMs,
-    N_free_QNMs,
     initial_guess=None,
     bounds=None,
     t_ref=0,
@@ -699,8 +575,6 @@ def fit_ringdown_waveform(
         The mass of the black hole, M > 0.
     fixed_QNMs: list
         List of fixed QNMs to fit to, e.g., [(2,2,0,1), (2,2,1,1), ...]
-    N_free_QNMs: int
-        Number of free frequencies to fit for using varpro.
     initial_guess: list, optional
         Initial guess for free frequencies.
         Default is [0.5, -0.2] * N_free_QNMs.
@@ -732,168 +606,10 @@ def fit_ringdown_waveform(
         Output message of nonlinear least squares optimization.
 
     """
-    # Create ringdown waveform and varpro inputs
     L, M = mode
     idx1 = np.argmin(abs(h.t - times[0]))
     idx2 = np.argmin(abs(h.t - times[1])) + 1
 
     h_ring = h.copy()[idx1:idx2]
 
-    if N_free_QNMs == 0:
-        return fit_ringdown_waveform_LLSQ(h_ring, [mode], times, chi_f, M_f, fixed_QNMs)
-
-    N_fixed_QNMs = len(fixed_QNMs)
-    N_QNMs = N_fixed_QNMs + N_free_QNMs
-
-    w = np.ones(2 * h_ring.t.size)
-    if initial_guess is None:
-        initial_guess = np.array([0.5, -0.2] * N_free_QNMs)
-
-    fixed_QNM_components = []
-    for fixed_QNM in fixed_QNMs.values():
-        fixed_QNM_components.append(fixed_QNM["omega"].real)
-        fixed_QNM_components.append(fixed_QNM["omega"].imag)
-
-    if bounds is None:
-        bounds = ([-np.inf, -np.inf], [np.inf, 0])
-
-    # Use varpro
-    (
-        res,
-        c,
-        wresid,
-        wresid_norm,
-        y_est,
-        CorMx,
-        std_dev_params,
-        message,
-        success,
-    ) = varpro.varpro(
-        h_ring.t,
-        np.concatenate(
-            (
-                h_ring.data[:, sf.LM_index(L, M, h_ring.ell_min)].real,
-                h_ring.data[:, sf.LM_index(L, M, h_ring.ell_min)].imag,
-            )
-        ),
-        w,
-        initial_guess,
-        2 * N_QNMs,
-        lambda alpha: fit_ringdown_waveform_functions(
-            h_ring.t, fixed_QNM_components, alpha
-        ),
-        bounds=(bounds[0] * N_free_QNMs, bounds[1] * N_free_QNMs),
-        ftol=ftol,
-        gtol=gtol,
-        verbose=False,
-    )
-
-    # Compute error and mismatch
-    h_QNM = h_ring.copy()
-    h_QNM.data *= 0
-    h_QNM.data[:, sf.LM_index(L, M, h_QNM.ell_min)] = (
-        y_est[: h_ring.t.size] + 1j * y_est[h_ring.t.size :]
-    )
-
-    h_diff = h_ring.copy()
-    h_diff.data *= 0
-    h_diff.data[:, sf.LM_index(L, M, h_diff.ell_min)] = h_ring.data[
-        :, sf.LM_index(L, M, h_ring.ell_min)
-    ]
-    h_diff.data -= h_QNM.data
-
-    error = (
-        0.5 * trapezoid(h_diff.norm(), h_diff.t) / trapezoid(h_ring.norm(), h_ring.t)
-    )
-    mismatch = waveform_mismatch(
-        h_ring, h_QNM, modes=[(L, M)], t1=times[0], t2=times[1]
-    )
-
-    # Create QNMs Dict
-    As = np.array([c[2 * i] + 1j * c[2 * i + 1] for i in range(N_QNMs)])
-    omegas = np.array(
-        [
-            fixed_QNM_components[2 * i] + 1j * fixed_QNM_components[2 * i + 1]
-            for i in range(N_fixed_QNMs)
-        ]
-        + [res[2 * i] + 1j * res[2 * i + 1] for i in range(N_free_QNMs)]
-    )
-    QNMs = {
-        i: {
-            "type": "other",
-            "A": As[i],
-            "omega": omegas[i],
-            "target mode": (L, M),
-        }
-        for i in range(N_QNMs)
-    }
-
-    # Compute std devs (is this right?)
-    y_est_re_im = y_est[: h_diff.t.size] + 1j * y_est[h_diff.t.size :]
-    wresid_re_im = h_ring.data[:, sf.LM_index(L, M, h_ring.ell_min)] - y_est_re_im
-
-    Phi, dPhi, Ind = fit_ringdown_waveform_functions(
-        h_diff.t, fixed_QNM_components, res
-    )
-    xx, pp = dPhi.shape
-    J = np.zeros((2 * len(h_diff.t), 2 * N_free_QNMs))
-    for kk in np.arange(pp):
-        j = Ind[0, kk]
-        i = Ind[1, kk]
-        if j > 2 * N_QNMs:
-            J[:, i] = J[:, i] + dPhi[:, kk]
-        else:
-            J[:, i] = J[:, i] + c[j] * dPhi[:, kk]
-
-    Phi_re_im = np.zeros((Phi.shape[0] // 2, Phi.shape[1] // 2), dtype=complex)
-    for i in range(Phi.shape[1] // 2):
-        Phi_re_im[:, i] += (
-            Phi[: h_diff.t.size, 2 * i] + 1j * Phi[h_diff.t.size :, 2 * i]
-        )
-        Phi_re_im[:, i] += (
-            Phi[: h_diff.t.size, 2 * i + 1] + 1j * Phi[h_diff.t.size :, 2 * i + 1]
-        )
-
-    J_re_im = np.zeros((J.shape[0] // 2, J.shape[1] // 2), dtype=complex)
-    for i in range(J.shape[1] // 2):
-        J_re_im[:, i] += J[: h_diff.t.size, 2 * i] + 1j * J[h_diff.t.size :, 2 * i]
-        J_re_im[:, i] += (
-            J[: h_diff.t.size, 2 * i + 1] + 1j * J[h_diff.t.size :, 2 * i + 1]
-        )
-
-    W_re_im = spdiags(np.ones(h_diff.t.size), 0, h_diff.t.size, h_diff.t.size)
-
-    Mat = W_re_im.dot(
-        np.concatenate((Phi_re_im[:, np.arange(N_QNMs)], J_re_im), axis=1)
-    )
-
-    sigma_K2 = np.conjugate(np.transpose(wresid_re_im)).dot(wresid_re_im) / (
-        h_diff.t.size - N_QNMs - N_free_QNMs + 1
-    )
-    sigma_J2 = np.transpose(wresid_re_im).dot(wresid_re_im) / (
-        h_diff.t.size - N_QNMs - N_free_QNMs + 1
-    )
-
-    Qj, Rj, Pj = linalg.qr(Mat, mode="economic", pivoting=True)
-    T2 = linalg.solve_triangular(Rj, (np.identity(Rj.shape[0])))
-
-    K_cov = np.zeros(Rj.shape, dtype=complex)
-    J_cov = np.zeros(Rj.shape, dtype=complex)
-    K_cov_temp = np.zeros(Rj.shape, dtype=complex)
-    J_cov_temp = np.zeros(Rj.shape, dtype=complex)
-
-    K_cov_temp[:, Pj] = np.conjugate(np.transpose(T2)).dot(T2) * sigma_K2
-    J_cov_temp[:, Pj] = np.transpose(T2).dot(T2) * sigma_J2
-
-    K_cov[Pj, :] = K_cov_temp
-    J_cov[Pj, :] = J_cov_temp
-
-    std_dev_of_real_parts = np.sqrt(np.diag(0.5 * (K_cov + J_cov).real))
-    std_dev_of_imag_parts = np.sqrt(np.diag(0.5 * (K_cov - J_cov).real))
-
-    std_dev_params = [
-        std_dev_of_real_parts[i] + 1j * std_dev_of_imag_parts[i]
-        for i in range(len(std_dev_of_imag_parts))
-    ]
-
-    return h_QNM, h_ring, error, mismatch, QNMs, std_dev_params, message
+    return fit_ringdown_waveform_LLSQ(h_ring, [mode], times, chi_f, M_f, fixed_QNMs)

@@ -68,16 +68,48 @@ class MulticolorPatchHandler(object):
 
 
 def compute_rotation_factor(input_mode, output_mode, theta):
-    """
-    Compute the WignerD matrices using spherical_functions
+    """Compute the WignerD matrices using spherical_functions.
+
+    Parameters
+    ----------
+    input_mode: tuple
+        Mode, i.e., (\ell, m), to be rotated.
+    output_mode: tuple
+        Mode to be rotated into.
+    theta: float
+
+    Returns
+    -------
+    WignerD_coeff: complex
+        WignerD matrix coefficient.
+
     """
     v = quaternion.quaternion(*np.array([np.sin(theta), 0, np.cos(theta)])).normalized()
     R = (1 - v * quaternion.z).normalized()
 
-    return sf.Wigner_D_element(R, input_mode[0], output_mode[1], input_mode[1])
+    WignerD_coeff = sf.Wigner_D_element(R, input_mode[0], output_mode[1], input_mode[1])
+
+    return WignerD_coeff
 
 
 def rotation_factor_theory(q, chi_eff=0):
+    """Compute the theory prediction for the relative QNM excitation of the (2,1)/(2,2) QNM ratio.
+
+    Parameters
+    ----------
+    q : float
+        Mass ratio.
+    chi_eff : float, optional
+        Effective spin. [Default: 0.]
+
+    Returns
+    -------
+    angles : ndarray
+        Angles, from 0 to \pi, used to compute the rotation curve.
+    rotation_factors: ndarray
+        Predictions for relative QNM excitation.
+
+    """
     nu = q / (1 + q) ** 2
     ratio = 0.43 * (np.sqrt(1 - 4 * nu) - chi_eff)
 
@@ -85,14 +117,14 @@ def rotation_factor_theory(q, chi_eff=0):
     rotation_factors = np.array(
         [
             np.sqrt(
-                ratio * compute_rotation_factor((2, 1), (2, 1), angle) ** 2
-                + ratio * compute_rotation_factor((2, 1), (2, -1), angle) ** 2
+                (ratio * compute_rotation_factor((2, 1), (2, 1), angle)) ** 2
+                + (ratio * compute_rotation_factor((2, 1), (2, -1), angle)) ** 2
                 + compute_rotation_factor((2, 2), (2, 1), angle) ** 2
                 + compute_rotation_factor((2, 2), (2, -1), angle) ** 2
             )
             / np.sqrt(
-                ratio * compute_rotation_factor((2, 1), (2, 1), angle) ** 2
-                + ratio * compute_rotation_factor((2, 1), (2, -1), angle) ** 2
+                (ratio * compute_rotation_factor((2, 1), (2, 2), angle)) ** 2
+                + (ratio * compute_rotation_factor((2, 1), (2, -2), angle)) ** 2
                 + compute_rotation_factor((2, 2), (2, 2), angle) ** 2
                 + compute_rotation_factor((2, 2), (2, -2), angle) ** 2
             )
@@ -195,19 +227,21 @@ def create_Figure1(qs, thetas, ratios_L2M1_mirror, ratios_L2M1_pro_retro_mirror)
     axis[1][1].plot(
         angles,
         rotation_factors,
-        label="rotation of\n spin-aligned\n perturbation",
+        label="rotation of $q=1$,\n non-precessing\n perturbation",
+        lw=1.4,
+        alpha=0.6,
         zorder=np.inf,
     )
 
-    _, rotation_factors = rotation_factor_theory(8, 0)
-    axis[1][1].plot(angles, rotation_factors, zorder=np.inf, color="blue")
     _, rotation_factors = rotation_factor_theory(8, -0.6)
-    axis[1][1].plot(angles, rotation_factors, zorder=np.inf, color="green")
-
     axis[1][1].plot(
-        [None],
-        [None],
-        label=r"$\cfrac{\mathfrak{D}_{1,2}^{2,\pm}(\theta)}{\mathfrak{D}_{2,2}^{2,\pm}(\theta)}$",
+        angles,
+        rotation_factors,
+        label="$q=8$, $\chi_{\mathrm{eff}}=-0.6$",
+        lw=1.4,
+        alpha=0.6,
+        zorder=np.inf,
+        color=colors[1],
     )
 
     xlim = axis[1][1].get_xlim()
@@ -221,23 +255,6 @@ def create_Figure1(qs, thetas, ratios_L2M1_mirror, ratios_L2M1_pro_retro_mirror)
         zorder=np.inf - 1,
     )
     axis[1][1].set_xlim(xlim)
-
-    x = 3.05
-    y = 5.92e-1
-    ell_offset = ScaledTranslation(x, y, axis[1][1].transScale)
-    ell_tform = ell_offset + axis[1][1].transLimits + axis[1][1].transAxes
-    axis[1][1].add_patch(
-        Ellipse(
-            xy=(0, 0),
-            width=0.46,
-            height=0.28,
-            color=colors[0],
-            fill=False,
-            lw=1,
-            zorder=10,
-            transform=ell_tform,
-        )
-    )
 
     axis[1][1].set_yscale("log")
     axis[1][1].set_xlim(0 - 0.2, np.pi + 0.2)
@@ -264,15 +281,13 @@ def create_Figure1(qs, thetas, ratios_L2M1_mirror, ratios_L2M1_pro_retro_mirror)
 
     leg = axis[1][1].legend(
         loc="lower center",
-        ncol=2,
+        ncol=1,
         frameon=True,
         framealpha=1,
-        fontsize=10,
+        fontsize=8,
         columnspacing=-1.8,
     )
-    for i, item in enumerate(leg.legendHandles):
-        if i > 0:
-            item.set_visible(False)
+    leg.set_zorder(np.inf)
 
     c2 = fig.colorbar(result, cax=axis[0][1], orientation="horizontal")
 
@@ -542,63 +557,7 @@ def create_Figure3(
     plt.savefig(f"CCEFigures/Figure3.pdf", bbox_inches="tight")
 
 
-def create_Figure1_supplement(t, time_dependent_thetas, qs):
-    fig, axis = plt.subplots(
-        2, 1, figsize=(onecol_w_in, onecol_w_in * 0.88), height_ratios=[0.05, 1.0]
-    )
-    plt.subplots_adjust(hspace=0.02, wspace=0.02)
-
-    cm = plt.get_cmap("magma")
-    cNorm = mplcolors.Normalize(vmin=0, vmax=8.5)
-    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
-    for i, time_dependent_theta in enumerate(time_dependent_thetas):
-        idx1 = np.argmin(abs(t - -500))
-        idx2 = np.argmin(abs(t - 20)) + 1
-        axis[1].plot(
-            t[idx1:idx2], time_dependent_theta[idx1:idx2], c=scalarMap.to_rgba(qs[i])
-        )
-
-    axis[1].set_yticks(
-        [
-            0.0,
-            np.pi / 8,
-            2 * np.pi / 8,
-            3 * np.pi / 8,
-            4 * np.pi / 8,
-            5 * np.pi / 8,
-            6 * np.pi / 8,
-            7 * np.pi / 8,
-            np.pi,
-        ]
-    )
-    axis[1].set_yticklabels(
-        [
-            r"$0$",
-            None,
-            r"$\frac{\pi}{4}$",
-            None,
-            r"$\frac{\pi}{2}$",
-            None,
-            r"$\frac{3\pi}{4}$",
-            None,
-            r"$\pi$",
-        ]
-    )
-
-    c = fig.colorbar(scalarMap, cax=axis[0], orientation="horizontal", pad=0)
-
-    c.ax.xaxis.set_ticks_position("top")
-    c.ax.set_xlabel(r"mass ratio $q$", fontsize=10, labelpad=-30)
-    c.ax.set_xlim(1, 8)
-    c.ax.set_xticks([1, 2, 3, 4, 5, 6, 7, 8])
-
-    axis[1].set_xlabel(r"$(t-t_{\mathrm{peak}})/M$", fontsize=10)
-    axis[1].set_ylabel(r"misalignment angle $\theta$", fontsize=10)
-
-    plt.savefig(f"CCEFigures/supplement_Figure1.pdf", bbox_inches="tight")
-
-
-def create_Figure2_supplement(thetas, errors, chi_fs):
+def create_Figure1_supplement(thetas, errors, chi_fs):
     fig, axis = plt.subplots(
         2, 1, figsize=(onecol_w_in, onecol_w_in * 0.88), height_ratios=[0.05, 1.0]
     )
@@ -635,10 +594,10 @@ def create_Figure2_supplement(thetas, errors, chi_fs):
     axis[1].set_xlabel(r"$\chi_{f}$", fontsize=10)
     axis[1].set_ylabel(r"relative error of QNM fit", fontsize=10)
 
-    plt.savefig(f"CCEFigures/supplement_Figure2.pdf", bbox_inches="tight")
+    plt.savefig(f"CCEFigures/supplement_Figure1.pdf", bbox_inches="tight")
 
 
-def create_Figure3_supplement(thetas, chi_ps, qs):
+def create_Figure2_supplement(thetas, asymms, kick_rapidities):
     fig, axis = plt.subplots(
         4,
         1,
@@ -647,18 +606,14 @@ def create_Figure3_supplement(thetas, chi_ps, qs):
     )
     plt.subplots_adjust(hspace=0.05, wspace=0.02)
 
-    result = axis[1].scatter(thetas, chi_ps, c=qs, s=8, cmap="magma", vmax=8.5)
-    axis[1].set_yscale("log")
-    axis[1].set_ylim(2e-1, 1e0)
-
-    axis[1].set_yticks([2e-1, 3e-1, 4e-1, 5e-1, 6e-1, 7e-1, 8e-1, 9e-1, 1e0])
-    axis[1].set_yticklabels(
-        [None, None, None, None, None, None, None, None, r"$10^{0}$"]
+    result = axis[1].scatter(
+        [None] * len(thetas),
+        [None] * len(thetas),
+        c=kick_rapidities,
+        s=8,
+        cmap="cividis",
+        norm=mpl.colors.LogNorm(vmin=1e-4, vmax=max(kick_rapidities)),
     )
-
-    result = axis[3].scatter(thetas, chi_ps, c=qs, s=8, cmap="magma", vmax=8.5)
-    axis[3].set_yscale("log")
-    axis[3].set_ylim(top=2e-6, bottom=6e-8)
 
     axis[2].set_visible(False)
 
@@ -681,8 +636,26 @@ def create_Figure3_supplement(thetas, chi_ps, qs):
     axis[1].plot([0, 1], [0, 0], transform=axis[1].transAxes, **kwargs)
     axis[3].plot([0, 1], [1, 1], transform=axis[3].transAxes, **kwargs)
 
-    for i in [1, 3]:
-        axis[i].set_xticks(
+    cm = plt.get_cmap("cividis")
+    cNorm = mplcolors.LogNorm(vmin=1e-4, vmax=max(kick_rapidities))
+    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
+
+    for k in [1, 3]:
+        for i in range(len(thetas)):
+            markers, caps, bars = axis[k].errorbar(
+                thetas[i],
+                asymms[:, 0][i],
+                yerr=asymms[:, 1][i],
+                fmt="o",
+                markersize=np.sqrt(8),
+                color=scalarMap.to_rgba(kick_rapidities[i]),
+            )
+            [bar.set_alpha(0.4) for bar in bars]
+
+        axis[k].set_yscale("log")
+        axis[k].set_xlim(0 - 0.2, np.pi + 0.2)
+
+        axis[k].set_xticks(
             [
                 0.0,
                 np.pi / 8,
@@ -695,7 +668,7 @@ def create_Figure3_supplement(thetas, chi_ps, qs):
                 np.pi,
             ]
         )
-        axis[i].set_xticklabels(
+        axis[k].set_xticklabels(
             [
                 r"$0$",
                 None,
@@ -709,224 +682,21 @@ def create_Figure3_supplement(thetas, chi_ps, qs):
             ]
         )
 
-    c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
-
-    c.ax.xaxis.set_ticks_position("top")
-    c.ax.set_xlabel(r"mass ratio $q$", fontsize=10, labelpad=-30)
-    c.ax.set_xlim(1, 8)
-    c.ax.set_xticks([1, 2, 3, 4, 5, 6, 7, 8])
+    axis[1].set_ylim(bottom=2e-2)
+    axis[3].set_ylim(top=6e-5)
 
     axis[3].set_xlabel(r"misalignment angle $\theta$", fontsize=10)
-    axis[3].set_ylabel(r"$\chi_{p}$", fontsize=10, y=1.2)
-
-    plt.savefig(f"CCEFigures/supplement_Figure3.pdf", bbox_inches="tight")
-
-
-def create_Figure4_supplement(thetas, ratios_L2M0, kick_angles):
-    fig, axis = plt.subplots(
-        2, 1, figsize=(onecol_w_in, onecol_w_in * 0.8), height_ratios=[0.05, 1]
-    )
-    plt.subplots_adjust(hspace=0.02, wspace=0.02)
-
-    result = axis[1].scatter(
-        [None] * len(kick_angles),
-        [None] * len(kick_angles),
-        c=kick_angles,
-        s=8,
-        cmap="coolwarm",
-    )
-
-    cm = plt.get_cmap("coolwarm")
-    cNorm = mplcolors.Normalize(vmin=min(kick_angles), vmax=max(kick_angles))
-    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
-    for i in range(len(thetas)):
-        markers, caps, bars = axis[1].errorbar(
-            thetas[i],
-            ratios_L2M0[:, 0][i],
-            yerr=ratios_L2M0[:, 1][i],
-            fmt="o",
-            markersize=np.sqrt(8),
-            color=scalarMap.to_rgba(kick_angles[i]),
-        )
-        [bar.set_alpha(0.4) for bar in bars]
-
-    axis[1].set_yscale("log")
-    axis[1].set_xlim(0 - 0.2, np.pi + 0.2)
-
-    axis[1].set_xticks(
-        [
-            0.0,
-            np.pi / 8,
-            2 * np.pi / 8,
-            3 * np.pi / 8,
-            4 * np.pi / 8,
-            5 * np.pi / 8,
-            6 * np.pi / 8,
-            7 * np.pi / 8,
-            np.pi,
-        ]
-    )
-    axis[1].set_xticklabels(
-        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
-    )
-
-    angles = np.linspace(0, np.pi, 100)
-    rotation_factors = np.array(
-        [
-            abs(compute_rotation_factor((2, 2), (2, 0), angle))
-            / abs(compute_rotation_factor((2, 2), (2, 2), angle))
-            for angle in angles
-        ]
-    )
-
-    axis[1].plot(
-        angles,
-        rotation_factors,
-        label=r"$\cfrac{\mathfrak{D}_{0,2}^{2}(\theta)}{\mathfrak{D}_{2,2}^{2}(\theta)}$",
-        zorder=np.inf,
-    )
-
-    xlim = axis[1].get_xlim()
-    axis[1].plot(
-        np.arange(-np.pi, 2 * np.pi, 0.01),
-        np.ones_like(np.arange(-np.pi, 2 * np.pi, 0.01)),
-        ls="--",
-        color=colors[0],
-        lw=1.4,
-        alpha=0.6,
-        zorder=np.inf - 1,
-    )
-    axis[1].set_xlim(xlim)
-
-    axis[1].set_ylim(top=2e2)
-
-    axis[1].set_xlabel(r"misalignment angle $\theta$", fontsize=10)
-    axis[1].set_ylabel(r"$A_{(+,2,0,0)}/A_{(+,2,2,0)}$", fontsize=10)
-
-    axis[1].legend(loc="lower right", frameon=True, framealpha=1, fontsize=10)
+    axis[3].set_ylabel(r"parity breaking of $\pm m$ QNMs", fontsize=10, y=1.1)
 
     c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
 
     c.ax.xaxis.set_ticks_position("top")
-    c.ax.set_xticks(
-        [
-            0.0,
-            np.pi / 8,
-            2 * np.pi / 8,
-            3 * np.pi / 8,
-            4 * np.pi / 8,
-            5 * np.pi / 8,
-            6 * np.pi / 8,
-            7 * np.pi / 8,
-            np.pi,
-        ]
-    )
-    c.ax.set_xticklabels(
-        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
-    )
-    c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=10, labelpad=-30)
+    c.ax.set_xlabel(r"kick rapidity", fontsize=10, labelpad=-30)
 
-    plt.savefig(f"CCEFigures/supplement_Figure4.pdf", bbox_inches="tight")
+    plt.savefig(f"CCEFigures/supplement_Figure2.pdf", bbox_inches="tight")
 
 
-def create_Figure5_supplement(thetas, ratios_L2M0_pro_retro_mirror, qs):
-    fig, axis = plt.subplots(
-        2, 1, figsize=(onecol_w_in, onecol_w_in * 0.8), height_ratios=[0.05, 1]
-    )
-    plt.subplots_adjust(hspace=0.02, wspace=0.02)
-
-    result = axis[1].scatter(
-        [None] * len(qs), [None] * len(qs), c=qs, s=8, cmap="magma", vmax=8.5
-    )
-
-    cm = plt.get_cmap("magma")
-    cNorm = mplcolors.Normalize(vmin=min(qs), vmax=8.5)
-    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
-    for i in range(len(thetas)):
-        markers, caps, bars = axis[1].errorbar(
-            thetas[i],
-            ratios_L2M0_pro_retro_mirror[:, 0][i],
-            yerr=ratios_L2M0_pro_retro_mirror[:, 1][i],
-            fmt="o",
-            markersize=np.sqrt(8),
-            color=scalarMap.to_rgba(qs[i]),
-        )
-        [bar.set_alpha(0.4) for bar in bars]
-
-    axis[1].set_yscale("log")
-    axis[1].set_xlim(0 - 0.2, np.pi + 0.2)
-
-    axis[1].set_xticks(
-        [
-            0.0,
-            np.pi / 8,
-            2 * np.pi / 8,
-            3 * np.pi / 8,
-            4 * np.pi / 8,
-            5 * np.pi / 8,
-            6 * np.pi / 8,
-            7 * np.pi / 8,
-            np.pi,
-        ]
-    )
-    axis[1].set_xticklabels(
-        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
-    )
-
-    angles = np.linspace(0, np.pi, 100)
-    rotation_factors = np.array(
-        [
-            np.sqrt(
-                compute_rotation_factor((2, 2), (2, 0), angle) ** 2
-                + compute_rotation_factor((2, 2), (2, -0), angle) ** 2
-            )
-            / np.sqrt(
-                compute_rotation_factor((2, 2), (2, 2), angle) ** 2
-                + compute_rotation_factor((2, 2), (2, -2), angle) ** 2
-            )
-            for angle in angles
-        ]
-    )
-
-    axis[1].plot(
-        angles,
-        rotation_factors,
-        label=r"$\cfrac{\mathfrak{D}_{0,2}^{2,\pm}(\theta)}{\mathfrak{D}_{2,2}^{2,\pm}(\theta)}$",
-        zorder=np.inf,
-    )
-
-    xlim = axis[1].get_xlim()
-    axis[1].plot(
-        np.arange(-np.pi, 2 * np.pi, 0.01),
-        np.ones_like(np.arange(-np.pi, 2 * np.pi, 0.01)),
-        ls="--",
-        color=colors[0],
-        lw=1.4,
-        alpha=0.6,
-        zorder=np.inf - 1,
-    )
-    axis[1].set_xlim(xlim)
-
-    axis[1].set_ylim(top=4e1)
-
-    axis[1].set_xlabel(r"misalignment angle $\theta$", fontsize=10)
-    axis[1].set_ylabel(r"$A_{(\pm,2,0,0)}/A_{(\pm,2,\pm2,0)}$", fontsize=10)
-
-    axis[1].legend(
-        loc="lower right", frameon=True, framealpha=1, fontsize=10
-    ).set_zorder(np.inf)
-
-    c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
-
-    c.ax.xaxis.set_ticks_position("top")
-    c.ax.set_xlim(1, 8)
-    c.ax.set_xticks([1, 2, 3, 4, 5, 6, 7, 8])
-    c.ax.set_xlabel(r"mass ratio $q$", fontsize=10, labelpad=-30)
-
-    plt.savefig(f"CCEFigures/supplement_Figure5.pdf", bbox_inches="tight")
-
-
-def create_Figure6_supplement(
+def create_Figure3_supplement(
     thetas, ratios_L3M2, ratios_L3M1, ratios_L3M0, kick_angles
 ):
     fig, axis = plt.subplot_mosaic(
@@ -1063,10 +833,117 @@ def create_Figure6_supplement(
     )
     c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=10, labelpad=-36)
 
-    plt.savefig(f"CCEFigures/supplement_Figure6.pdf", bbox_inches="tight")
+    plt.savefig(f"CCEFigures/supplement_Figure3.pdf", bbox_inches="tight")
 
 
-def create_Figure7_supplement(thetas, ratios_L2M2, kick_angles):
+def create_Figure4_supplement(thetas, ratios_L2M0, kick_angles):
+    fig, axis = plt.subplots(
+        2, 1, figsize=(onecol_w_in, onecol_w_in * 0.8), height_ratios=[0.05, 1]
+    )
+    plt.subplots_adjust(hspace=0.02, wspace=0.02)
+
+    result = axis[1].scatter(
+        [None] * len(kick_angles),
+        [None] * len(kick_angles),
+        c=kick_angles,
+        s=8,
+        cmap="coolwarm",
+    )
+
+    cm = plt.get_cmap("coolwarm")
+    cNorm = mplcolors.Normalize(vmin=min(kick_angles), vmax=max(kick_angles))
+    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
+    for i in range(len(thetas)):
+        markers, caps, bars = axis[1].errorbar(
+            thetas[i],
+            ratios_L2M0[:, 0][i],
+            yerr=ratios_L2M0[:, 1][i],
+            fmt="o",
+            markersize=np.sqrt(8),
+            color=scalarMap.to_rgba(kick_angles[i]),
+        )
+        [bar.set_alpha(0.4) for bar in bars]
+
+    axis[1].set_yscale("log")
+    axis[1].set_xlim(0 - 0.2, np.pi + 0.2)
+
+    axis[1].set_xticks(
+        [
+            0.0,
+            np.pi / 8,
+            2 * np.pi / 8,
+            3 * np.pi / 8,
+            4 * np.pi / 8,
+            5 * np.pi / 8,
+            6 * np.pi / 8,
+            7 * np.pi / 8,
+            np.pi,
+        ]
+    )
+    axis[1].set_xticklabels(
+        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
+    )
+
+    angles = np.linspace(0, np.pi, 100)
+    rotation_factors = np.array(
+        [
+            abs(compute_rotation_factor((2, 2), (2, 0), angle))
+            / abs(compute_rotation_factor((2, 2), (2, 2), angle))
+            for angle in angles
+        ]
+    )
+
+    axis[1].plot(
+        angles,
+        rotation_factors,
+        label=r"$\cfrac{\mathfrak{D}_{0,2}^{2}(\theta)}{\mathfrak{D}_{2,2}^{2}(\theta)}$",
+        zorder=np.inf,
+    )
+
+    xlim = axis[1].get_xlim()
+    axis[1].plot(
+        np.arange(-np.pi, 2 * np.pi, 0.01),
+        np.ones_like(np.arange(-np.pi, 2 * np.pi, 0.01)),
+        ls="--",
+        color=colors[0],
+        lw=1.4,
+        alpha=0.6,
+        zorder=np.inf - 1,
+    )
+    axis[1].set_xlim(xlim)
+
+    axis[1].set_ylim(top=2e2)
+
+    axis[1].set_xlabel(r"misalignment angle $\theta$", fontsize=10)
+    axis[1].set_ylabel(r"$A_{(+,2,0,0)}/A_{(+,2,2,0)}$", fontsize=10)
+
+    axis[1].legend(loc="lower right", frameon=True, framealpha=1, fontsize=10)
+
+    c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
+
+    c.ax.xaxis.set_ticks_position("top")
+    c.ax.set_xticks(
+        [
+            0.0,
+            np.pi / 8,
+            2 * np.pi / 8,
+            3 * np.pi / 8,
+            4 * np.pi / 8,
+            5 * np.pi / 8,
+            6 * np.pi / 8,
+            7 * np.pi / 8,
+            np.pi,
+        ]
+    )
+    c.ax.set_xticklabels(
+        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
+    )
+    c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=10, labelpad=-30)
+
+    plt.savefig(f"CCEFigures/supplement_Figure4.pdf", bbox_inches="tight")
+
+
+def create_Figure5_supplement(thetas, ratios_L2M2, kick_angles):
     fig, axis = plt.subplots(
         2, 1, figsize=(onecol_w_in, onecol_w_in * 0.8), height_ratios=[0.05, 1]
     )
@@ -1152,135 +1029,57 @@ def create_Figure7_supplement(thetas, ratios_L2M2, kick_angles):
     )
     c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=10, labelpad=-30)
 
-    plt.savefig(f"CCEFigures/supplement_Figure7.pdf", bbox_inches="tight")
-
-
-def create_Figure8_supplement(thetas, asymms, kick_rapidities):
-    fig, axis = plt.subplots(
-        4,
-        1,
-        figsize=(onecol_w_in, onecol_w_in * 0.88),
-        height_ratios=[0.108, 1.0, 0.1, 1.0],
-    )
-    plt.subplots_adjust(hspace=0.05, wspace=0.02)
-
-    result = axis[1].scatter(
-        [None] * len(thetas),
-        [None] * len(thetas),
-        c=kick_rapidities,
-        s=8,
-        cmap="cividis",
-        norm=mpl.colors.LogNorm(vmin=1e-4, vmax=max(kick_rapidities)),
-    )
-
-    axis[2].set_visible(False)
-
-    axis[1].spines.bottom.set_visible(False)
-    axis[3].spines.top.set_visible(False)
-    axis[1].xaxis.tick_top()
-    axis[1].tick_params(labeltop=False)
-    axis[3].xaxis.tick_bottom()
-
-    d = 0.5  # proportion of vertical to horizontal extent of the slanted line
-    kwargs = dict(
-        marker=[(-1, -d), (1, d)],
-        markersize=10,
-        linestyle="none",
-        color="k",
-        mec="k",
-        mew=1,
-        clip_on=False,
-    )
-    axis[1].plot([0, 1], [0, 0], transform=axis[1].transAxes, **kwargs)
-    axis[3].plot([0, 1], [1, 1], transform=axis[3].transAxes, **kwargs)
-
-    cm = plt.get_cmap("cividis")
-    cNorm = mplcolors.LogNorm(vmin=1e-4, vmax=max(kick_rapidities))
-    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
-
-    for k in [1, 3]:
-        for i in range(len(thetas)):
-            markers, caps, bars = axis[k].errorbar(
-                thetas[i],
-                asymms[:, 0][i],
-                yerr=asymms[:, 1][i],
-                fmt="o",
-                markersize=np.sqrt(8),
-                color=scalarMap.to_rgba(kick_rapidities[i]),
-            )
-            [bar.set_alpha(0.4) for bar in bars]
-
-        axis[k].set_yscale("log")
-        axis[k].set_xlim(0 - 0.2, np.pi + 0.2)
-
-        axis[k].set_xticks(
-            [
-                0.0,
-                np.pi / 8,
-                2 * np.pi / 8,
-                3 * np.pi / 8,
-                4 * np.pi / 8,
-                5 * np.pi / 8,
-                6 * np.pi / 8,
-                7 * np.pi / 8,
-                np.pi,
-            ]
-        )
-        axis[k].set_xticklabels(
-            [
-                r"$0$",
-                None,
-                r"$\pi/4$",
-                None,
-                r"$\pi/2$",
-                None,
-                r"$3\pi/4$",
-                None,
-                r"$\pi$",
-            ]
-        )
-
-    axis[1].set_ylim(bottom=2e-2)
-    axis[3].set_ylim(top=6e-5)
-
-    axis[3].set_xlabel(r"misalignment angle $\theta$", fontsize=10)
-    axis[3].set_ylabel(r"parity breaking of $\pm m$ QNMs", fontsize=10, y=1.1)
-
-    c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
-
-    c.ax.xaxis.set_ticks_position("top")
-    c.ax.set_xlabel(r"kick rapidity", fontsize=10, labelpad=-30)
-
-    plt.savefig(f"CCEFigures/supplement_Figure8.pdf", bbox_inches="tight")
+    plt.savefig(f"CCEFigures/supplement_Figure5.pdf", bbox_inches="tight")
 
 
 def compute_mode_amplitude(data, mode, pro_retro=False, mirror=False):
     """
     Compute the QNM amplitude and standard deviation from the complex amplitude obtained from fitting.
-    If pro_retro=True, then the returned information is for a linear sum of the prograde and retrograde modes.
-    If mirror=True, then the returned information is a quadrature sum of the \pm m modes.
+
+    Parameters
+    ----------
+    data : dict
+        Fitting data (output by analysis.py).
+    mode : tuple
+        (\ell, m, n, s) of QNM.
+    pro_retro : bool, optional
+        Compute the quadrature sum of the prograde and retrograde mode amplitudes. [Default: False].
+    mirror: bool, optional
+        Compute the quadrature sum of the mirror mode amplitudes. [Default: False].
     """
     L, M, N, S = mode
     if pro_retro and not mirror:
         # prograde
-        A_mode_pro = (
+        A_mode_pro = abs(
             data[str((L, M, N, S)).replace(" ", "")]["A"][0]
             + 1j * data[str((L, M, N, S)).replace(" ", "")]["A"][1]
         )
         A_mode_pro_std_re = data[str((L, M, N, S)).replace(" ", "")]["A_std"][0]
         A_mode_pro_std_im = data[str((L, M, N, S)).replace(" ", "")]["A_std"][1]
 
+        A_mode_pro_std = np.sqrt(A_mode_pro_std_re**2 + A_mode_pro_std_im**2)
+
         # retrograde
-        A_mode_retro = (
+        A_mode_retro = abs(
             data[str((L, M, N, -S)).replace(" ", "")]["A"][0]
             + 1j * data[str((L, M, N, -S)).replace(" ", "")]["A"][1]
         )
         A_mode_retro_std_re = data[str((L, M, N, -S)).replace(" ", "")]["A_std"][0]
         A_mode_retro_std_im = data[str((L, M, N, -S)).replace(" ", "")]["A_std"][1]
 
-        return abs(A_mode_pro + A_mode_retro), np.sqrt(
-            (A_mode_pro_std_re**2 + A_mode_retro_std_re**2)
-            + (A_mode_pro_std_im**2 + A_mode_retro_std_im**2)
+        A_mode_retro_std = np.sqrt(A_mode_retro_std_re**2 + A_mode_retro_std_im**2)
+
+        Q_sum = np.sqrt(A_mode_pro**2 + A_mode_retro**2)
+
+        return (
+            Q_sum,
+            np.sqrt(
+                (
+                    A_mode_pro**2 * A_mode_pro_std**2
+                    + A_mode_retro**2 * A_mode_retro_std**2
+                )
+            )
+            / Q_sum,
         )
     elif not pro_retro and mirror:
         # positive M
@@ -1304,58 +1103,84 @@ def compute_mode_amplitude(data, mode, pro_retro=False, mirror=False):
 
         Q_sum = np.sqrt(A_mode_pM**2 + A_mode_nM**2)
 
-        return Q_sum, np.sqrt(
-            (A_mode_pM * A_mode_pM_std**2 + A_mode_nM * A_mode_nM_std**2) / Q_sum
+        return (
+            Q_sum,
+            np.sqrt(
+                (
+                    A_mode_pM**2 * A_mode_pM_std**2
+                    + A_mode_nM**2 * A_mode_nM_std**2
+                )
+            )
+            / Q_sum,
         )
     elif pro_retro and mirror:
         # prograde positive M
-        A_mode_pro_pM = (
+        A_mode_pro_pM = abs(
             data[str((L, M, N, S)).replace(" ", "")]["A"][0]
             + 1j * data[str((L, M, N, S)).replace(" ", "")]["A"][1]
         )
         A_mode_pro_pM_std_re = data[str((L, M, N, S)).replace(" ", "")]["A_std"][0]
         A_mode_pro_pM_std_im = data[str((L, M, N, S)).replace(" ", "")]["A_std"][1]
 
+        A_mode_pro_pM_std = np.sqrt(
+            A_mode_pro_pM_std_re**2 + A_mode_pro_pM_std_im**2
+        )
+
         # retrograde positive M
-        A_mode_retro_pM = (
+        A_mode_retro_pM = abs(
             data[str((L, M, N, -S)).replace(" ", "")]["A"][0]
             + 1j * data[str((L, M, N, -S)).replace(" ", "")]["A"][1]
         )
         A_mode_retro_pM_std_re = data[str((L, M, N, -S)).replace(" ", "")]["A_std"][0]
         A_mode_retro_pM_std_im = data[str((L, M, N, -S)).replace(" ", "")]["A_std"][1]
 
+        A_mode_retro_pM_std = np.sqrt(
+            A_mode_retro_pM_std_re**2 + A_mode_retro_pM_std_im**2
+        )
+
         # prograde negative M
-        A_mode_pro_nM = (
+        A_mode_pro_nM = abs(
             data[str((L, -M, N, -S)).replace(" ", "")]["A"][0]
             + 1j * data[str((L, -M, N, -S)).replace(" ", "")]["A"][1]
         )
         A_mode_pro_nM_std_re = data[str((L, -M, N, -S)).replace(" ", "")]["A_std"][0]
         A_mode_pro_nM_std_im = data[str((L, -M, N, -S)).replace(" ", "")]["A_std"][1]
 
+        A_mode_pro_nM_std = np.sqrt(
+            A_mode_pro_nM_std_re**2 + A_mode_pro_nM_std_im**2
+        )
+
         # retrograde negative M
-        A_mode_retro_nM = (
+        A_mode_retro_nM = abs(
             data[str((L, -M, N, S)).replace(" ", "")]["A"][0]
             + 1j * data[str((L, -M, N, S)).replace(" ", "")]["A"][1]
         )
         A_mode_retro_nM_std_re = data[str((L, -M, N, S)).replace(" ", "")]["A_std"][0]
         A_mode_retro_nM_std_im = data[str((L, -M, N, S)).replace(" ", "")]["A_std"][1]
 
-        A_mode_pM = abs(A_mode_pro_pM + A_mode_retro_pM)
-        A_mode_nM = abs(A_mode_pro_nM + A_mode_retro_nM)
-
-        Q_sum = np.sqrt(A_mode_pM**2 + A_mode_nM**2)
-
-        A_mode_pM_std = np.sqrt(
-            (A_mode_pro_pM_std_re**2 + A_mode_retro_pM_std_re**2)
-            + (A_mode_pro_pM_std_im**2 + A_mode_retro_pM_std_im**2)
-        )
-        A_mode_nM_std = np.sqrt(
-            (A_mode_pro_nM_std_re**2 + A_mode_retro_nM_std_re**2)
-            + (A_mode_pro_nM_std_im**2 + A_mode_retro_nM_std_im**2)
+        A_mode_retro_nM_std = np.sqrt(
+            A_mode_retro_nM_std_re**2 + A_mode_retro_nM_std_im**2
         )
 
-        return Q_sum, np.sqrt(
-            (A_mode_pM * A_mode_pM_std**2 + A_mode_nM * A_mode_nM_std**2) / Q_sum
+        # Combine
+        Q_sum = np.sqrt(
+            A_mode_pro_pM**2
+            + A_mode_retro_pM**2
+            + A_mode_pro_nM**2
+            + A_mode_retro_nM**2
+        )
+
+        return (
+            Q_sum,
+            np.sqrt(
+                (
+                    A_mode_pro_pM**2 * A_mode_pro_pM_std**2
+                    + A_mode_retro_pM**2 * A_mode_retro_pM_std**2
+                    + A_mode_pro_nM**2 * A_mode_pro_nM_std**2
+                    + A_mode_retro_nM**2 * A_mode_retro_nM_std**2
+                )
+            )
+            / Q_sum,
         )
     else:
         A_mode = abs(
@@ -1381,8 +1206,35 @@ def compute_ratio(
 ):
     """
     Compute the ratio between two QNM amplitudes.
-    If pro_retro=True, then the returned information is for a linear sum of the prograde and retrograde modes.
-    If mirror=True, then the returned information is a quadrature sum of the \pm m modes.
+
+    Parameters
+    ----------
+    data : dict
+        Fitting data (output by analysis.py).
+    mode1 : tuple
+        (\ell, m, n, s) of numerator QNM.
+    mode2 : tuple
+        (\ell, m, n, s) of denominator QNM.
+    mode1_pro_retro : bool, optional
+        Whether or not to compute the quadrature sum of the prograde/retrograde mode amplitudes for the numerator QNM.
+        [Default: False].
+    mode2_pro_retro : bool, optional
+        Whether or not to compute the quadrature sum of the prograde/retrograde mode amplitudes for the denominator QNM.
+        [Default: False].
+    mode1_mirror : bool, optional
+        Whether or not to compute the quadrature sum of the mirror mode amplitudes for the numerator QNM.
+        [Default: False].
+    mode2_mirror : bool, optional
+        Whether or not to compute the quadrature sum of the mirror mode amplitudes for the denominator QNM.
+        [Default: False].
+
+    Returns
+    -------
+    A_ratio : float
+        Ratio of QNM amplitudes.
+    A_ratio_std : float
+        Standard deviation of ratio of QNM amplitudes.
+
     """
     A_mode1, A_mode1_std = compute_mode_amplitude(
         data, mode1, mode1_pro_retro, mode1_mirror
@@ -1399,6 +1251,19 @@ def compute_ratio(
 def compute_asymmetry_statistics(data):
     """
     Compute the violation of the orbital plane symmetry.
+
+    Parameters
+    ----------
+    data : dict
+        Fitting data (output by analysis.py).
+
+    Returns
+    -------
+    final_asymmetry_S2 : float
+        Asymmetry measurement over the two-sphere.
+    final_asymmetry_S2_std : float
+        Standard deviation of asymmetry measurement over the two-sphere.
+
     """
     asymms = []
 
@@ -1560,7 +1425,7 @@ def main():
         chi_p = max(np.linalg.norm(chi1[:2]), np.linalg.norm(chi2[:2]))
         chi_ps.append(chi_p)
 
-        thetas.append(data[simulation]["theta_from_LL_strain"])
+        thetas.append(data[simulation]["theta"])
         kick_angles.append(data[simulation]["kick theta"])
         kick_rapidities.append(data[simulation]["kick rapidity"])
 
@@ -1687,18 +1552,6 @@ def main():
     t0s = np.array(t0s)
     CVs = np.array(CVs)
 
-    def round_to_n(x, n):
-        return round(x, -int(np.floor(np.log10(x))) + (n - 1))
-
-    print(f"Max Error: {round_to_n(100*max(np.sqrt(2*errors)), 3)}%")
-    print(
-        f"Average Error: {round_to_n(100*np.mean(np.sqrt(2*errors)), 3)}%, {round_to_n(np.std(np.sqrt(2*errors)), 3)}"
-    )
-    print(f"Average t0: {round_to_n(np.mean(t0s), 3)}, {round_to_n(np.std(t0s), 3)}")
-    print(f"Max CV: {round_to_n(100*max(CVs), 3)}%")
-    print(f"Average CV: {round_to_n(100*np.mean(CVs), 3)}%")
-    print(f"Median CV: {round_to_n(100*np.median(CVs), 3)}%")
-
     ratios_L2M2 = np.array(ratios_L2M2)
 
     ratios_L2M1 = np.array(ratios_L2M1)
@@ -1736,23 +1589,17 @@ def main():
         list(data.keys()), mirror_mode_ratios, mirror_mode_ratio_errors, N_systems=6
     )
 
-    # create_Figure1_supplement(np.arange(-1000, 250, 0.1), time_dependent_thetas, qs)
+    create_Figure1_supplement(thetas, errors, chi_fs)
 
-    create_Figure2_supplement(thetas, errors, chi_fs)
+    create_Figure2_supplement(thetas, asymms, kick_rapidities)
 
-    create_Figure3_supplement(thetas, chi_ps, qs)
-
-    create_Figure4_supplement(thetas, ratios_L2M0, kick_angles)
-
-    create_Figure5_supplement(thetas, ratios_L2M0_pro_retro_mirror, qs)
-
-    create_Figure6_supplement(
+    create_Figure3_supplement(
         thetas, ratios_L3M2, ratios_L3M1, ratios_L3M0, kick_angles
     )
 
-    create_Figure7_supplement(thetas, ratios_L2M2, kick_angles)
+    create_Figure4_supplement(thetas, ratios_L2M0, kick_angles)
 
-    create_Figure8_supplement(thetas, asymms, kick_rapidities)
+    create_Figure5_supplement(thetas, ratios_L2M2, kick_angles)
 
 
 if __name__ == "__main__":

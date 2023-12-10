@@ -1,0 +1,36 @@
+{
+  "sxs_format": "rotating_paired_xor_multishuffle_bzip2",
+  "data_info": {
+    "data_type": "psi0",
+    "m_is_scaled_out": true,
+    "r_is_scaled_out": true,
+    "spin_weight": 2,
+    "ell_min": 2,
+    "ell_max": 8
+  },
+  "version_info": {
+    "python": "3.8.5 (default, Sep  4 2020, 07:30:14) \n[GCC 7.3.0]",
+    "numpy": "1.24.3",
+    "scipy": "1.9.3",
+    "h5py": "3.8.0",
+    "numba": "0.57.0",
+    "quaternion": "2022.4.2",
+    "spherical_functions": "2022.4.1",
+    "spinsfast": "2022.4.1",
+    "scri": "2020.11.16.21.3.34",
+    "quaternionic": "1.0.1",
+    "spherical": "1.0.10",
+    "sxs": "2022.5.1",
+    "spec_version_hist": []
+  },
+  "validation": {
+    "h5_file_size": 5159225,
+    "n_times": 14578,
+    "md5sum": "b8cec6f41f890137d654b5eabacec4fd"
+  },
+  "modifications": {
+    "truncate": {
+      "tol": 1e-10
+    }
+  }
+}

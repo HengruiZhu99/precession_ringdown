@@ -16,11 +16,21 @@ from scri.asymptotic_bondi_data.map_to_superrest_frame import MT_to_WM, WM_to_MT
 def read_waveform(
     simulation, waveform_dir="bondi_cce_superrest_iplus", suffix="_superrest"
 ):
-    """Load a waveform or an ABD object for a certain simulation.
+    """Load a waveform or an AsymptoticBondiData object for a certain simulation.
 
     Parameters
     ----------
     simulation : string
+    waveform_dir : string, optional
+    suffix: string, optional
+
+    Returns
+    -------
+    abd : AsymptoticBondiData
+        Data object containing the strain and Weyl scalars.
+    remnant_spin : float
+    remnant_mass : float
+
     """
     Lev = "."
     radius = [
@@ -62,6 +72,22 @@ def read_waveform(
 
 
 def compute_omega(modes, chi_f, M_f):
+    """Compute the QNM frequency for a single QNM tuple or a combination of QNM tuples.
+
+    Parameters
+    ----------
+    modes : tuple or list
+        Tuple of (l, m, n, p) QNM indexes or list of tuple of QNM indexes.
+    chi_f : float
+        Remnant spin.
+    M_f : float
+        Remnant_mass.
+
+    Returns
+    -------
+    omega: float
+
+    """
     omega = 0
     if type(modes) == list:
         for mode in modes:
@@ -73,6 +99,21 @@ def compute_omega(modes, chi_f, M_f):
 
 
 def compute_change_in_flux(abd, t1=0, integrated=False):
+    """Compute angle between angular momentum flux and remnant spin axis.
+
+    Parameters
+    ----------
+    abd : AsymptoticBondiData
+    t1 : float, optional
+        Time at which to compute the angular momentum flux. [Default: 0].
+    integrated : bool, optional
+        If True, use the angular momentum, rather than the angular momentum flux. [Default: False].
+
+    Returns
+    -------
+    misalignment_angle : float
+
+    """
     h = MT_to_WM(2.0 * abd.sigma.bar)
     charge = abd.bondi_dimensionless_spin()[-1]
 
@@ -96,22 +137,36 @@ def compute_change_in_flux(abd, t1=0, integrated=False):
             np.linalg.norm(J_t1, axis=1) * np.linalg.norm(J_t2)
         )
 
-    return np.arccos(cos_theta)
+    misalignment_angle = np.arccos(cos_theta)
 
-
-def compute_change_in_charge(abd, t1=0):
-    charge = abd.bondi_dimensionless_spin()
-
-    charge_t1 = charge[np.argmin(abs(abd.t - t1))]
-    charge_t2 = charge[-1]
-    cos_theta = np.dot(charge_t1, charge_t2) / (
-        np.linalg.norm(charge_t1) * np.linalg.norm(charge_t2)
-    )
-
-    return np.arccos(cos_theta)
+    return misalignment_angle
 
 
 def fit_QNMs(h, chi_f, M_f, t0s, tf=100, ell_max=4, window_size=20):
+    """Fit waveform with QNMs over a range of start times and return the amplitudes that are most stable over a 20M window.
+
+    Parameters
+    ----------
+    h : WaveformModes
+    chi_f: float
+       Remnant spin.
+    M_f:
+       Remnant mass.
+    t0s: list
+       Start times to loop over.
+    t_f: float, optional
+       Final time to use in QNM fits. [Default: 100].
+    ell_max: int, optional
+       Maximum \ell to include in QNM fits. [Default: 4].
+    window_size: float, optional
+       Window size over which to check stability. [Default: 20].
+
+    Returns
+    -------
+    QNM_As : dict
+        Dictionary of QNM amplitudes and standard deviations and various fit statistics.
+
+    """
     QNM_dict = {}
 
     count = 0
@@ -129,6 +184,7 @@ def fit_QNMs(h, chi_f, M_f, t0s, tf=100, ell_max=4, window_size=20):
     As = []
     As_re = []
     As_im = []
+    As_for_CV = []
     errors = []
     mismatches = []
     for t0 in t0s:
@@ -209,15 +265,14 @@ def fit_QNMs(h, chi_f, M_f, t0s, tf=100, ell_max=4, window_size=20):
     return QNM_As
 
 
-simulations = np.load("../simulations.npy")
+simulations = []
 
-if os.path.exists("QNM_results.json"):
-    with open("QNM_results.json") as input_file:
+if os.path.exists("QNM_results_test.json"):
+    with open("QNM_results_test.json") as input_file:
         data = json.load(input_file)
 else:
     data = {}
 
-theta_flux_time_dependents = []
 for simulation in simulations:
     if simulation in data:
         print("Continue-ing! ", simulation)
@@ -231,7 +286,7 @@ for simulation in simulations:
         CoM_charge = abd.bondi_CoM_charge() / abd.bondi_four_momentum()[:, 0, None]
 
         idx1 = np.argmin(abs(abd.t - -1000))
-        idx2 = np.argmin(abs(abd.t - -800)) + 1
+        idx2 = np.argmin(abs(abd.t - -500)) + 1
         fit_0 = np.polyfit(abd.t[idx1:idx2], CoM_charge[idx1:idx2], 1)
 
         idx1 = np.argmin(abs(abd.t - 200))
@@ -243,6 +298,8 @@ for simulation in simulations:
         kick_theta = np.arccos(
             np.dot(v_f, chi_f) / (np.linalg.norm(v_f) * np.linalg.norm(chi_f))
         )
+
+        kick_rapidity = np.arctanh(np.linalg.norm(v_f))
 
         h = MT_to_WM(2.0 * abd.sigma.bar)
     except:
@@ -261,7 +318,6 @@ for simulation in simulations:
     chi2 = metadata["reference-dimensionless-spin2"]
 
     theta = compute_change_in_flux(abd, t1=0)
-    theta_time_dependent = compute_change_in_flux(abd, t1=None)
 
     t0s = np.arange(20, 80 + 0.5, 0.5)
 
@@ -276,8 +332,8 @@ for simulation in simulations:
         "M_f": M_f,
         "chi_f": np.linalg.norm(chi_f),
         "theta": theta,
-        "thetas": theta_time_dependent.tolist(),
         "kick theta": kick_theta,
+        "kick rapidity": kick_rapidity,
     }
 
     data_per_sim = {**data_per_sim, **QNM_As}
