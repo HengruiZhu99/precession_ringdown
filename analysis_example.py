@@ -265,13 +265,9 @@ def fit_QNMs(h, chi_f, M_f, t0s, tf=100, ell_max=4, window_size=20):
     return QNM_As
 
 
-simulations = []
+simulations = ["192"]
 
-if os.path.exists("QNM_results_test.json"):
-    with open("QNM_results_test.json") as input_file:
-        data = json.load(input_file)
-else:
-    data = {}
+data = {}
 
 for simulation in simulations:
     if simulation in data:
@@ -310,9 +306,7 @@ for simulation in simulations:
         print("Bad time array... Continue-ing!")
         continue
 
-    metadata_dir = simulation.replace("CCEAnnex", "SimAnnex").replace("_CCE", "")
-
-    metadata = sxs.Metadata.from_file(f"{metadata_dir}metadata.json")
+    metadata = sxs.Metadata.from_file(f"{simulation}/metadata.json")
     q = metadata["reference-mass1"] / metadata["reference-mass2"]
     chi1 = metadata["reference-dimensionless-spin1"]
     chi2 = metadata["reference-dimensionless-spin2"]
@@ -340,7 +334,7 @@ for simulation in simulations:
 
     data[simulation] = data_per_sim
 
-    with open("QNM_results.json", "w") as output_file:
+    with open("QNM_results_example.json", "w") as output_file:
         json.dump(
             dict(sorted(data.items())),
             output_file,
