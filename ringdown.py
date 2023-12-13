@@ -299,7 +299,42 @@ def fit_ringdown_waveform_LLSQ_S2(
 ):
     """Linear least squares routine for fitting a NR waveform with QNMs.
 
-    (see fit_ringdown_waveform for more details).
+    Paramters
+    ---------
+    h : scri.WaveformModes
+        Input waveform to fit to.
+    modes : list of tuples
+        Mode of waveform, e.g., (ell, m), to fit to.
+    times : tuple
+        Times to fit over, e.g., (0, 100).
+    chi_f : float
+        The dimensionless spin of the black hole, 0. <= chi < 1.
+    M_f : float
+        The mass of the black hole, M > 0.
+    fixed_QNMs : dict
+        Dictionary of QNMs to fit.
+        Each entry should look something like:
+            {
+              'type': 'QNM',
+              'target mode': (2,2),
+              'mode': (2,2,0,1),
+              'omega': 0.5 - 0.1j
+            }
+    t_ref : float, optional [Default: 0.]
+        Time at which amplitudes are specified.
+
+    Returns
+    -------
+    h_QNM : scri.WaveformModes
+        QNM waveform from fit.
+    h_ring : scri.WaveformModes
+        NR waveform that was fit to.
+    error : float
+        0.5 * L2norm(h_ring - h_QNM)^2 / L2norm(h_ring)^2
+    mismatch : float
+        Mismatch between h_ring and h_QNM.
+    fixed_QNMs : dict
+        Identical to input `fixed_QNMs`, but with the key 'A' describing the QNM amplitude from the fit.
 
     """
     t_0 = times[0]
@@ -382,158 +417,4 @@ def fit_ringdown_waveform_LLSQ_S2(
     )
     mismatch = waveform_mismatch(h_ring, h_QNM, modes=modes, t1=times[0], t2=times[1])
 
-    return h_QNM, h_ring, error, mismatch, fixed_QNMs, None, "LLSQ"
-
-
-def fit_ringdown_waveform_LLSQ(h_ring, modes, times, chi_f, M_f, fixed_QNMs, t_ref=0):
-    """Linear least squares routine for fitting a NR waveform with QNMs.
-
-    (see fit_ringdown_waveform for more details).
-
-    """
-    t_0 = times[0]
-
-    m_list = []
-    [
-        m_list.append(m)
-        for (_, m) in [term["target mode"] for term in fixed_QNMs.values()]
-        if m not in m_list
-    ]
-    # break problem into one m at a time.
-    # the m's are decoupled, and the truncation in ell for each m is different.
-    for m in m_list:
-        mode_labels_m = [
-            (i, term)
-            for i, term in enumerate(fixed_QNMs.values())
-            if term["target mode"][1] == m
-        ]
-
-        # restrict the modes included in the least squares fit to the modes of interest
-        ell_min_m = h_ring.ell_min
-        ell_max_m = h_ring.ell_max
-        if modes is None:
-            data_index_m = [
-                sf.LM_index(l, m, h_ring.ell_min) for l in range(2, ell_max_m + 1)
-            ]
-        else:
-            data_index_m = [
-                sf.LM_index(l, m, h_ring.ell_min)
-                for l in range(2, ell_max_m + 1)
-                if (l, m) in modes
-            ]
-            ell_min_m = min(np.array([_l for (_l, _m) in modes if m == _m]))
-            ell_max_m = max(np.array([_l for (_l, _m) in modes if m == _m]))
-
-        A = np.zeros((len(h_ring.t), ell_max_m - ell_min_m + 1), dtype=complex)
-        B = np.zeros(
-            (len(h_ring.t), ell_max_m - ell_min_m + 1, len(mode_labels_m)),
-            dtype=complex,
-        )
-
-        h_ring_trunc = h_ring[:, : ell_max_m + 1]
-        A = h_ring_trunc.data[:, data_index_m]
-        for mode_index, (i, term) in enumerate(mode_labels_m):
-            term_w_A = term.copy()
-            term["A"] = 1
-            h_QNM = qnm_modes_as(
-                chi_f, M_f, {0: term}, h_ring_trunc, t_0=t_0, t_ref=t_ref
-            )
-            B[:, :, mode_index] = h_QNM.data[:, data_index_m]
-
-        A = np.reshape(A, len(h_ring.t) * (ell_max_m - ell_min_m + 1))
-        B = np.reshape(
-            B, (len(h_ring.t) * (ell_max_m - ell_min_m + 1), len(mode_labels_m))
-        )
-        C = np.linalg.lstsq(B, A, rcond=None)
-
-        count = 0
-        for i, term in mode_labels_m:
-            fixed_QNMs[i]["A"] = C[0][count]
-            count += 1
-
-    h_QNM = qnm_modes_as(chi_f, M_f, fixed_QNMs, h_ring, t_0=t_0, t_ref=t_ref)
-
-    h_diff = h_ring.copy()
-    h_diff.data *= 0
-    for mode in modes:
-        L, M = mode
-        h_diff.data[:, sf.LM_index(L, M, h_diff.ell_min)] = (
-            h_ring.data[:, sf.LM_index(L, M, h_ring.ell_min)]
-            - h_QNM.data[:, sf.LM_index(L, M, h_QNM.ell_min)]
-        )
-
-    error = (
-        0.5 * trapezoid(h_diff.norm(), h_diff.t) / trapezoid(h_ring.norm(), h_ring.t)
-    )
-    mismatch = waveform_mismatch(h_ring, h_QNM, modes=modes, t1=times[0], t2=times[1])
-
-    return h_QNM, h_ring, error, mismatch, fixed_QNMs, None, "LLSQ"
-
-
-def fit_ringdown_waveform(
-    h,
-    mode,
-    times,
-    chi_f,
-    M_f,
-    fixed_QNMs,
-    initial_guess=None,
-    bounds=None,
-    t_ref=0,
-    ftol=1e-8,
-    gtol=1e-8,
-):
-    """Fit a waveform with QNMs.
-
-    Parameters
-    ----------
-    h: scri.WaveformModes
-        Input waveform to fit to.
-    mode: tuple
-        Mode of waveform, e.g., (ell, m), to fit to.
-    times: tuple
-        Times to fit over, e.g., (0, 100).
-    chi: float
-        The dimensionless spin of the black hole, 0. <= chi < 1.
-    mass: float
-        The mass of the black hole, M > 0.
-    fixed_QNMs: list
-        List of fixed QNMs to fit to, e.g., [(2,2,0,1), (2,2,1,1), ...]
-    initial_guess: list, optional
-        Initial guess for free frequencies.
-        Default is [0.5, -0.2] * N_free_QNMs.
-    bounds: list, optional
-        Bounds for free frequencies.
-        Default is [(-np.inf, np.inf), (-np.inf, 0)] * N_free_QNMs.
-    t_ref: float, optional [Default: 0.]
-        Time at which amplitudes are specified.
-    ftol: float, optional [Default: 1e-8]
-        ftol used in nonlinear least squares optimization.
-    gtol: float, optional [Default: 1e-8]
-        gtol used in nonlinear least squares optimization.
-
-    Returns
-    -------
-    h_QNM: scri.WaveformModes
-        Waveform of QNMs fit to the input waveform.
-    h_ring: scri.WaveformModes
-        Waveform (computed from the input waveform) that was fit to.
-    error: float
-        error between the waveforms, i.e., 0.5 * (relative error over times)^2.
-    mismatch: float
-        mismatch between the waveforms.
-    QNMs: dict
-        Dictionary of the fit QNMs.
-    std_dev_params: np.array
-        standard deviations for fit results.
-    message: string
-        Output message of nonlinear least squares optimization.
-
-    """
-    L, M = mode
-    idx1 = np.argmin(abs(h.t - times[0]))
-    idx2 = np.argmin(abs(h.t - times[1])) + 1
-
-    h_ring = h.copy()[idx1:idx2]
-
-    return fit_ringdown_waveform_LLSQ(h_ring, [mode], times, chi_f, M_f, fixed_QNMs)
+    return h_QNM, h_ring, error, mismatch, fixed_QNMs

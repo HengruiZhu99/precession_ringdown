@@ -193,15 +193,7 @@ def fit_QNMs(h, chi_f, M_f, t0s, tf=100, ell_max=4, window_size=20):
         idx2 = np.argmin(abs(h.t - times[1])) + 1
         h_ring = h.copy()[idx1:idx2:, 2 : 3 + 1]
 
-        (
-            h_QNM,
-            h_ring,
-            error,
-            mismatch,
-            QNM_fits,
-            std_dev_params,
-            _,
-        ) = fit_ringdown_waveform_LLSQ_S2(
+        (h_QNM, h_ring, error, mismatch, QNM_fits) = fit_ringdown_waveform_LLSQ_S2(
             h_ring,
             [(L, M) for L in [2, 3] for M in range(-L, L + 1)],
             times,
