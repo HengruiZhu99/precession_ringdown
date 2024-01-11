@@ -268,8 +268,15 @@ for simulation in simulations:
     else:
         print(simulation)
 
+    metadata = sxs.Metadata.from_file(f"{simulation}/metadata.json")
+    m1 = metadata["reference-mass1"]
+    m2 = metadata["reference-mass2"]
+    M_total = m1 + m2
+
     try:
         abd, chi_f, M_f = read_waveform(simulation)
+
+        abd.t *= M_total
 
         CoM_charge = abd.bondi_CoM_charge() / abd.bondi_four_momentum()[:, 0, None]
 
