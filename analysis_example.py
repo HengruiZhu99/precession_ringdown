@@ -7,8 +7,10 @@ import spherical_functions as sf
 import json
 
 from ringdown import *
+import quaternion
 from quaternion.calculus import derivative
 from quaternion.calculus import indefinite_integral as integrate
+from scri.mode_calculations import LLDominantEigenvector
 
 from scri.asymptotic_bondi_data.map_to_superrest_frame import MT_to_WM, WM_to_MT
 
@@ -142,6 +144,103 @@ def compute_change_in_flux(abd, t1=0, integrated=False):
     return misalignment_angle
 
 
+def h_to_Euler_angles(h, return_rotor=False):
+    RoughDirection = np.array([0.0, 0.0, 1.0])
+    RoughDirectionIndex = h.n_times // 8
+
+    dpa = LLDominantEigenvector(
+        h, RoughDirection=RoughDirection, RoughDirectionIndex=RoughDirectionIndex
+    )
+    R = np.array(
+        [
+            quaternion.quaternion.sqrt(
+                -quaternion.quaternion(0, *q).normalized() * quaternion.z
+            )
+            for q in dpa
+        ]
+    )
+    R = quaternion.minimal_rotation(R, h.t, iterations=3)
+
+    if return_rotor:
+        return R
+
+    euler_angles = np.unwrap(quaternion.as_euler_angles(R), axis=0)
+
+    return euler_angles
+
+
+def compute_Euler_angle_error(h, chi_f, M_f):
+    dJdt = h.angular_momentum_flux()[np.argmax(MT_to_WM(WM_to_MT(h).dot).norm())]
+    theta = np.arccos(
+        np.dot(dJdt, [0, 0, 1]) / (np.linalg.norm(dJdt) * np.linalg.norm([0, 0, 1]))
+    )
+
+    h = h[:, 2:4]
+
+    euler_angles = h_to_Euler_angles(h)
+
+    # times for determining late-time average
+    t1 = 40
+    t2 = 60
+    idx1 = np.argmin(abs(h.t - t1))
+    idx2 = np.argmin(abs(h.t - t2)) + 1
+
+    if theta < np.pi / 2:
+        omega22 = qnm_from_tuple((2, 2, 0, 1), chi_f, M_f)[0]
+        omega21 = qnm_from_tuple((2, 1, 0, 1), chi_f, M_f)[0]
+    else:
+        omega22 = qnm_from_tuple((2, 2, 0, -1), chi_f, M_f)[0]
+        omega21 = qnm_from_tuple((2, 1, 0, -1), chi_f, M_f)[0]
+
+    alpha_PHM = (omega22 - omega21).real * h.t
+    alpha_PHM += (
+        np.mean(euler_angles[idx1:idx2, 0])
+        - alpha_PHM[np.argmin(abs(h.t - (t1 + t2) / 2))]
+    )
+
+    beta0 = 2 * np.tan(np.mean(euler_angles[idx1:idx2, 1]) / 2)
+    beta_PHM = -2 * np.arctan(
+        beta0
+        * np.exp(-omega21.imag * (h.t - (t1 + t2) / 2))
+        / (2 * np.exp(-omega22.imag * (h.t - (t1 + t2) / 2)))
+    ) + 2 * np.mean(euler_angles[idx1:idx2, 1])
+
+    gamma_PHM = -integrate((omega22 - omega21).real * np.cos(beta_PHM), h.t)
+    gamma_PHM += (
+        np.mean(euler_angles[idx1:idx2, 2])
+        - gamma_PHM[np.argmin(abs(h.t - (t1 + t2) / 2))]
+    )
+
+    q_NR = quaternion.from_euler_angles(
+        np.array([euler_angles[:, 0], euler_angles[:, 1], euler_angles[:, 2]]).T
+    )
+
+    q_PHM = quaternion.from_euler_angles(np.array([alpha_PHM, beta_PHM, gamma_PHM]).T)
+
+    h_coprec_NR = h.copy()
+    h_coprec_NR = h_coprec_NR.rotate_decomposition_basis(q_NR)
+
+    h_coprec_PHM = h.copy()
+    h_coprec_PHM = h_coprec_PHM.rotate_decomposition_basis(q_PHM)
+
+    def compute_mismatch(h1, h2):
+        overlap = integrate(MT_to_WM(WM_to_MT(h1) * WM_to_MT(h2).bar).norm(), h1.t)[
+            -1
+        ].real
+        norm1 = integrate(MT_to_WM(WM_to_MT(h1) * WM_to_MT(h1).bar).norm(), h1.t)[
+            -1
+        ].real
+        norm2 = integrate(MT_to_WM(WM_to_MT(h2) * WM_to_MT(h2).bar).norm(), h1.t)[
+            -1
+        ].real
+
+        return 1.0 - overlap / np.sqrt(norm1 * norm2)
+
+    R_error = compute_mismatch(h_coprec_NR, h_coprec_PHM)
+
+    return R_error, theta
+
+
 def fit_QNMs(h, chi_f, M_f, t0s, tf=100, ell_max=4, window_size=20):
     """Fit waveform with QNMs over a range of start times and return the amplitudes that are most stable over a 20M window.
 
@@ -273,37 +372,29 @@ for simulation in simulations:
     m2 = metadata["reference-mass2"]
     M_total = m1 + m2
 
-    try:
-        abd, chi_f, M_f = read_waveform(simulation)
+    abd, chi_f, M_f = read_waveform(simulation)
 
-        abd.t *= M_total
+    abd.t *= M_total
 
-        CoM_charge = abd.bondi_CoM_charge() / abd.bondi_four_momentum()[:, 0, None]
+    CoM_charge = abd.bondi_CoM_charge() / abd.bondi_four_momentum()[:, 0, None]
 
-        idx1 = np.argmin(abs(abd.t - -1000))
-        idx2 = np.argmin(abs(abd.t - -500)) + 1
-        fit_0 = np.polyfit(abd.t[idx1:idx2], CoM_charge[idx1:idx2], 1)
+    idx1 = np.argmin(abs(abd.t - -1000))
+    idx2 = np.argmin(abs(abd.t - -500)) + 1
+    fit_0 = np.polyfit(abd.t[idx1:idx2], CoM_charge[idx1:idx2], 1)
 
-        idx1 = np.argmin(abs(abd.t - 200))
-        idx2 = np.argmin(abs(abd.t - 250)) + 1
-        fit_1 = np.polyfit(abd.t[idx1:idx2], CoM_charge[idx1:idx2], 1)
+    idx1 = np.argmin(abs(abd.t - 200))
+    idx2 = np.argmin(abs(abd.t - 250)) + 1
+    fit_1 = np.polyfit(abd.t[idx1:idx2], CoM_charge[idx1:idx2], 1)
 
-        v_f = fit_1[0] - fit_0[0]
+    v_f = fit_1[0] - fit_0[0]
 
-        kick_theta = np.arccos(
-            np.dot(v_f, chi_f) / (np.linalg.norm(v_f) * np.linalg.norm(chi_f))
-        )
+    kick_theta = np.arccos(
+        np.dot(v_f, chi_f) / (np.linalg.norm(v_f) * np.linalg.norm(chi_f))
+    )
 
-        kick_rapidity = np.arctanh(np.linalg.norm(v_f))
+    kick_rapidity = np.arctanh(np.linalg.norm(v_f))
 
-        h = MT_to_WM(2.0 * abd.sigma.bar)
-    except:
-        print("Failed to load... Continue-ing!")
-        continue
-
-    if abs(h.t[-1]) < 20:
-        print("Bad time array... Continue-ing!")
-        continue
+    h = MT_to_WM(2.0 * abd.sigma.bar)
 
     metadata = sxs.Metadata.from_file(f"{simulation}/metadata.json")
     q = metadata["reference-mass1"] / metadata["reference-mass2"]
@@ -330,6 +421,11 @@ for simulation in simulations:
     }
 
     data_per_sim = {**data_per_sim, **QNM_As}
+
+    h = h[np.argmin(abs(h.t - 0)) : np.argmin(abs(h.t - 100)) + 1]
+    R_error, _ = compute_Euler_angle_error(h, np.linalg.norm(chi_f), M_f)
+
+    data_per_sim["R_error"] = R_error
 
     data[simulation] = data_per_sim
 

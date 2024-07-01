@@ -2,10 +2,13 @@ import os
 import json
 import numpy as np
 
+import scri
 import quaternion
 import spherical_functions as sf
 
 from quaternion.calculus import derivative
+from quaternion.calculus import indefinite_integral as integrate
+from scri.mode_calculations import LLDominantEigenvector
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -25,8 +28,8 @@ colors = [
     "#009E73",
     "#E69F00",
     "#CC79A7",
-    "#56B4E9",
     "#F0E442",
+    "#56B4E9",
     "#D55E00",
 ]
 mpl.rcParams["axes.prop_cycle"] = mpl.cycler(color=colors)
@@ -136,62 +139,18 @@ def rotation_factor_theory(q, chi_eff=0):
 
 
 # Figure 1
-def create_Figure1(qs, thetas, ratios_L2M1_mirror, ratios_L2M1_pro_retro_mirror):
-    fig, axis = plt.subplots(
-        2,
-        2,
-        figsize=(twocol_w_in, twocol_w_in * 0.45),
-        sharex=False,
-        sharey=False,
+def create_L2M1_and_L2M0_figure(
+    qs, thetas, ratios_L2M1_pro_retro_mirror, ratios_L2M0_pro_retro_mirror
+):
+    fig, axis = plt.subplot_mosaic(
+        [["A", "A"], ["B", "C"]],
+        figsize=(twocol_w_in, twocol_w_in * 0.4),
         height_ratios=[0.05, 1],
     )
-    plt.subplots_adjust(hspace=0.02, wspace=0.3)
-
-    # panel A
-
-    result = axis[1][0].scatter(
-        thetas, qs, s=8, c=np.log10(ratios_L2M1_mirror[:, 0]), cmap="viridis"
-    )
-
-    axis[1][0].set_xlabel(r"misalignment angle $\theta$", fontsize=10)
-    axis[1][0].set_ylabel(r"mass ratio $q$", fontsize=10)
-
-    axis[1][0].set_xticks(
-        [
-            0.0,
-            np.pi / 8,
-            2 * np.pi / 8,
-            3 * np.pi / 8,
-            4 * np.pi / 8,
-            5 * np.pi / 8,
-            6 * np.pi / 8,
-            7 * np.pi / 8,
-            np.pi,
-        ]
-    )
-    axis[1][0].set_xticklabels(
-        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
-    )
-
-    c1 = fig.colorbar(result, cax=axis[0][0], orientation="horizontal")
-
-    c1.ax.xaxis.set_ticks_position("top")
-    c1.ax.set_xlabel(
-        r"$\log_{10}\left(A_{(+,2,\pm1,0)}/A_{(+,2,\pm2,0)}\right)$",
-        fontsize=10,
-        labelpad=-36,
-    )
-
-    im = plt.imread("CCEFigures/SpinMisalignmentCartoon.jpeg")
-    newax = fig.add_axes([0.185, 0.145, 0.26, 0.26], anchor="NE", zorder=1)
-    newax.imshow(im)
-    newax.get_xaxis().set_ticks([])
-    newax.get_yaxis().set_ticks([])
-    plt.setp(newax.spines.values(), color="lightgrey")
+    plt.subplots_adjust(hspace=0.02, wspace=0.02)
 
     # panel B
-
-    result = axis[1][1].scatter(
+    result = axis["B"].scatter(
         [None] * len(qs), [None] * len(qs), c=qs, s=8, cmap="magma", vmax=8.5
     )
 
@@ -199,13 +158,14 @@ def create_Figure1(qs, thetas, ratios_L2M1_mirror, ratios_L2M1_pro_retro_mirror)
     cNorm = mplcolors.Normalize(vmin=min(qs), vmax=8.5)
     scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
     for i in range(len(thetas)):
-        markers, caps, bars = axis[1][1].errorbar(
+        markers, caps, bars = axis["B"].errorbar(
             thetas[i],
             ratios_L2M1_pro_retro_mirror[:, 0][i],
             yerr=ratios_L2M1_pro_retro_mirror[:, 1][i],
             fmt="o",
             markersize=np.sqrt(8),
             color=scalarMap.to_rgba(qs[i]),
+            alpha=0.8,
         )
         [bar.set_alpha(0.4) for bar in bars]
 
@@ -224,28 +184,28 @@ def create_Figure1(qs, thetas, ratios_L2M1_mirror, ratios_L2M1_pro_retro_mirror)
         ]
     )
 
-    axis[1][1].plot(
+    axis["B"].plot(
         angles,
         rotation_factors,
-        label="rotation of $q=1$,\n non-precessing\n perturbation",
+        label="rotation of $q=1$,\n non-spinning\n perturbation",
         lw=1.4,
         alpha=0.6,
         zorder=np.inf,
     )
 
     _, rotation_factors = rotation_factor_theory(8, -0.6)
-    axis[1][1].plot(
+    axis["B"].plot(
         angles,
         rotation_factors,
-        label="$q=8$, $\chi_{\mathrm{eff}}=-0.6$",
+        label="$q=8$, $\chi_{\mathrm{diff}}=-0.6$",
         lw=1.4,
         alpha=0.6,
         zorder=np.inf,
-        color=colors[1],
+        color=colors[3],
     )
 
-    xlim = axis[1][1].get_xlim()
-    axis[1][1].plot(
+    xlim = axis["B"].get_xlim()
+    axis["B"].plot(
         np.arange(-np.pi, 2 * np.pi, 0.01),
         np.ones_like(np.arange(-np.pi, 2 * np.pi, 0.01)),
         ls="--",
@@ -254,15 +214,15 @@ def create_Figure1(qs, thetas, ratios_L2M1_mirror, ratios_L2M1_pro_retro_mirror)
         alpha=0.6,
         zorder=np.inf - 1,
     )
-    axis[1][1].set_xlim(xlim)
+    axis["B"].set_xlim(xlim)
 
-    axis[1][1].set_yscale("log")
-    axis[1][1].set_xlim(0 - 0.2, np.pi + 0.2)
+    axis["B"].set_yscale("log")
+    axis["B"].set_xlim(0 - 0.2, np.pi + 0.2)
 
-    axis[1][1].set_xlabel(r"misalignment angle $\theta$", fontsize=10)
-    axis[1][1].set_ylabel(r"$A_{(\pm,2,\pm1,0)}/A_{(\pm,2,\pm2,0)}$", fontsize=10)
+    axis["B"].set_xlabel(r"misalignment angle $\theta$", fontsize=10)
+    axis["B"].set_ylabel(r"$A_{(\pm,2,\pm1,0)}/A_{(\pm,2,\pm2,0)}$", fontsize=10)
 
-    axis[1][1].set_xticks(
+    axis["B"].set_xticks(
         [
             0.0,
             np.pi / 8,
@@ -275,11 +235,13 @@ def create_Figure1(qs, thetas, ratios_L2M1_mirror, ratios_L2M1_pro_retro_mirror)
             np.pi,
         ]
     )
-    axis[1][1].set_xticklabels(
+    axis["B"].set_xticklabels(
         [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
     )
 
-    leg = axis[1][1].legend(
+    axis["B"].set_ylim(3e-3, 3e0)
+
+    leg = axis["B"].legend(
         loc="lower center",
         ncol=1,
         frameon=True,
@@ -289,19 +251,114 @@ def create_Figure1(qs, thetas, ratios_L2M1_mirror, ratios_L2M1_pro_retro_mirror)
     )
     leg.set_zorder(np.inf)
 
-    c2 = fig.colorbar(result, cax=axis[0][1], orientation="horizontal")
+    # panel C
 
-    c2.ax.xaxis.set_ticks_position("top")
-    c2.ax.set_xlim(1, 8)
-    c2.ax.xaxis.set_ticks([1, 2, 3, 4, 5, 6, 7, 8])
-    c2.ax.set_xlabel(r"mass ratio $q$", fontsize=10, labelpad=-36)
+    result = axis["C"].scatter(
+        [None] * len(qs), [None] * len(qs), c=qs, s=8, cmap="magma", vmax=8.5
+    )
 
-    plt.savefig(f"CCEFigures/Figure1.pdf", bbox_inches="tight")
+    cm = plt.get_cmap("magma")
+    cNorm = mplcolors.Normalize(vmin=min(qs), vmax=8.5)
+    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
+    for i in range(len(thetas)):
+        markers, caps, bars = axis["C"].errorbar(
+            thetas[i],
+            ratios_L2M0_pro_retro_mirror[:, 0][i],
+            yerr=ratios_L2M0_pro_retro_mirror[:, 1][i],
+            fmt="o",
+            markersize=np.sqrt(8),
+            color=scalarMap.to_rgba(qs[i]),
+            alpha=0.8,
+        )
+        [bar.set_alpha(0.4) for bar in bars]
+
+    angles = np.linspace(0, np.pi, 100)
+    rotation_factors = np.array(
+        [
+            np.sqrt(
+                compute_rotation_factor((2, 2), (2, 0), angle) ** 2
+                + compute_rotation_factor((2, 2), (2, 0), angle) ** 2
+            )
+            / np.sqrt(
+                compute_rotation_factor((2, 2), (2, 2), angle) ** 2
+                + compute_rotation_factor((2, 2), (2, -2), angle) ** 2
+            )
+            for angle in angles
+        ]
+    )
+
+    axis["C"].plot(
+        angles,
+        rotation_factors,
+        label="rotation of $q=1$,\n non-spinning\n perturbation",
+        lw=1.4,
+        alpha=0.6,
+        zorder=np.inf,
+    )
+
+    xlim = axis["C"].get_xlim()
+    axis["C"].plot(
+        np.arange(-np.pi, 2 * np.pi, 0.01),
+        np.ones_like(np.arange(-np.pi, 2 * np.pi, 0.01)),
+        ls="--",
+        color=colors[0],
+        lw=1.4,
+        alpha=0.6,
+        zorder=np.inf - 1,
+    )
+    axis["C"].set_xlim(xlim)
+
+    axis["C"].set_yscale("log")
+    axis["C"].set_xlim(0 - 0.2, np.pi + 0.2)
+
+    axis["C"].set_xlabel(r"misalignment angle $\theta$", fontsize=10)
+    axis["C"].set_ylabel(
+        r"$A_{(\pm,2,0,0)}/A_{(\pm,2,\pm2,0)}$", fontsize=10, rotation=270, labelpad=16
+    )
+    axis["C"].yaxis.set_label_position("right")
+    axis["C"].yaxis.tick_right()
+
+    axis["C"].set_xticks(
+        [
+            0.0,
+            np.pi / 8,
+            2 * np.pi / 8,
+            3 * np.pi / 8,
+            4 * np.pi / 8,
+            5 * np.pi / 8,
+            6 * np.pi / 8,
+            7 * np.pi / 8,
+            np.pi,
+        ]
+    )
+    axis["C"].set_xticklabels(
+        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
+    )
+    axis["C"].set_yticklabels([])
+
+    axis["C"].set_ylim(3e-3, 3e0)
+
+    # Colorbar
+    c = fig.colorbar(result, cax=axis["A"], orientation="horizontal")
+
+    c.ax.xaxis.set_ticks_position("top")
+    c.ax.set_xlim(1, 8)
+    c.ax.xaxis.set_ticks([1, 2, 3, 4, 5, 6, 7, 8])
+    c.ax.set_xlabel(r"mass ratio $q$", fontsize=10, labelpad=-30)
+
+    im = plt.imread("CCEFigures/SpinMisalignmentCartoon.jpeg")
+    newax = fig.add_axes([-0.003, 0.34, 0.64, 0.28], zorder=1)
+    newax.imshow(im)
+    newax.get_xaxis().set_ticks([])
+    newax.get_yaxis().set_ticks([])
+    plt.setp(newax.spines.values(), color="lightgrey")
+
+    plt.savefig(f"CCEFigures/L2M1_and_L2M0_vs_prediction.pdf", bbox_inches="tight")
 
 
 # Figure 2
-def create_Figure2(
-    thetas, ratios_L2M1, pro_retro_ratios_L2M2, kick_angles, name_suffix=""
+def create_kick_velocity_figure(
+    thetas, ratios_L2M0, pro_retro_ratios_L2M2, kick_angles, name_suffix=""
 ):
     fig, axis = plt.subplots(
         3, 1, figsize=(onecol_w_in, onecol_w_in * 1.4), height_ratios=[0.05, 1, 1]
@@ -322,11 +379,12 @@ def create_Figure2(
     for i in range(len(thetas)):
         markers, caps, bars = axis[1].errorbar(
             thetas[i],
-            ratios_L2M1[:, 0][i],
-            yerr=ratios_L2M1[:, 1][i],
+            ratios_L2M0[:, 0][i],
+            yerr=ratios_L2M0[:, 1][i],
             fmt="o",
             markersize=np.sqrt(8),
             color=scalarMap.to_rgba(kick_angles[i]),
+            alpha=0.8,
         )
         [bar.set_alpha(0.4) for bar in bars]
 
@@ -351,7 +409,7 @@ def create_Figure2(
     angles = np.linspace(0, np.pi, 100)
     rotation_factors = np.array(
         [
-            abs(compute_rotation_factor((2, 2), (2, 1), angle))
+            abs(compute_rotation_factor((2, 2), (2, 0), angle))
             / abs(compute_rotation_factor((2, 2), (2, 2), angle))
             for angle in angles
         ]
@@ -360,7 +418,7 @@ def create_Figure2(
     axis[1].plot(
         angles,
         rotation_factors,
-        label=r"$\cfrac{\mathfrak{D}_{1,2}^{2}(\theta)}{\mathfrak{D}_{2,2}^{2}(\theta)}$",
+        label=r"$\cfrac{\mathfrak{D}_{0,2}^{2}(\theta)}{\mathfrak{D}_{2,2}^{2}(\theta)}$",
         zorder=np.inf,
     )
 
@@ -376,11 +434,11 @@ def create_Figure2(
     )
     axis[1].set_xlim(xlim)
 
-    axis[1].set_ylabel(r"$A_{(+,2,1,0)}/A_{(+,2,2,0)}$", fontsize=10)
+    axis[1].set_ylabel(r"$A_{(+,2,0,0)}/A_{(+,2,2,0)}$", fontsize=10)
 
     axis[1].legend(loc="lower right", frameon=True, framealpha=1, fontsize=10)
 
-    axis[1].set_ylim(bottom=6e-3, top=2e1)
+    axis[1].set_ylim(2e-4, 2e2)
 
     result = axis[2].scatter(
         [None] * len(kick_angles),
@@ -401,6 +459,7 @@ def create_Figure2(
             fmt="o",
             markersize=np.sqrt(8),
             color=scalarMap.to_rgba(kick_angles[i]),
+            alpha=0.8,
         )
         [bar.set_alpha(0.4) for bar in bars]
 
@@ -480,11 +539,13 @@ def create_Figure2(
     )
     c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=10, labelpad=-30)
 
-    plt.savefig(f"CCEFigures/Figure2.pdf", bbox_inches="tight")
+    plt.savefig(
+        f"CCEFigures/kick_velocity_spread_vs_prediction.pdf", bbox_inches="tight"
+    )
 
 
 # Figure 3
-def create_Figure3(
+def create_mode_asymmetries_figure(
     simulations, mirror_mode_ratios, mirror_mode_ratio_errors, N_systems=5
 ):
     fig, axis = plt.subplots(1, 1, figsize=(onecol_w_in, onecol_w_in * 0.88))
@@ -554,10 +615,10 @@ def create_Figure3(
     axis.set_xlabel(r"$(\ell,|m|)$", fontsize=10)
     axis.set_ylabel(r"$A_{(+,\ell,m,0)}/A_{(+,\ell,-m,0)}$", fontsize=10)
 
-    plt.savefig(f"CCEFigures/Figure3.pdf", bbox_inches="tight")
+    plt.savefig(f"CCEFigures/mode_asymmetries.pdf", bbox_inches="tight")
 
 
-def create_Figure1_supplement(thetas, errors, chi_fs):
+def create_QNM_fit_error_figure(thetas, errors, chi_fs):
     fig, axis = plt.subplots(
         2, 1, figsize=(onecol_w_in, onecol_w_in * 0.88), height_ratios=[0.05, 1.0]
     )
@@ -594,10 +655,10 @@ def create_Figure1_supplement(thetas, errors, chi_fs):
     axis[1].set_xlabel(r"$\chi_{f}$", fontsize=10)
     axis[1].set_ylabel(r"relative error of QNM fit", fontsize=10)
 
-    plt.savefig(f"CCEFigures/supplement_Figure1.pdf", bbox_inches="tight")
+    plt.savefig(f"CCEFigures/QNM_fit_errors.pdf", bbox_inches="tight")
 
 
-def create_Figure2_supplement(thetas, asymms, kick_rapidities):
+def create_parity_breaking_figure(thetas, asymms, kick_rapidities):
     fig, axis = plt.subplots(
         4,
         1,
@@ -693,15 +754,15 @@ def create_Figure2_supplement(thetas, asymms, kick_rapidities):
     c.ax.xaxis.set_ticks_position("top")
     c.ax.set_xlabel(r"kick rapidity", fontsize=10, labelpad=-30)
 
-    plt.savefig(f"CCEFigures/supplement_Figure2.pdf", bbox_inches="tight")
+    plt.savefig(f"CCEFigures/parity_breaking_figure.pdf", bbox_inches="tight")
 
 
-def create_Figure3_supplement(
+def create_higher_harmonics_vs_prediction_figure(
     thetas, ratios_L3M2, ratios_L3M1, ratios_L3M0, kick_angles
 ):
     fig, axis = plt.subplot_mosaic(
         [["A", "A", "A"], ["B", "C", "D"]],
-        figsize=(twocol_w_in, twocol_w_in * 0.5),
+        figsize=(twocol_w_in, twocol_w_in * 0.34),
         height_ratios=[0.05, 1],
     )
     plt.subplots_adjust(hspace=0.02, wspace=0.02)
@@ -794,7 +855,7 @@ def create_Figure3_supplement(
         props = dict(boxstyle="round", facecolor="wheat", alpha=0.5)
         axis[plot].text(
             0.728,
-            0.3,
+            0.44,
             r"$m=" + str(modes[i][1]) + "$",
             transform=axis[plot].transAxes,
             fontsize=10,
@@ -831,38 +892,42 @@ def create_Figure3_supplement(
     c.ax.set_xticklabels(
         [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
     )
-    c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=10, labelpad=-36)
+    c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=10, labelpad=-30)
 
-    plt.savefig(f"CCEFigures/supplement_Figure3.pdf", bbox_inches="tight")
+    plt.savefig(f"CCEFigures/higher_harmonics_vs_prediction.pdf", bbox_inches="tight")
 
 
-def create_Figure4_supplement(thetas, ratios_L2M0, kick_angles):
+def create_OShaughnessy_figure(thetas, asymms, qs, mismatches):
     fig, axis = plt.subplots(
-        2, 1, figsize=(onecol_w_in, onecol_w_in * 0.8), height_ratios=[0.05, 1]
+        2,
+        1,
+        figsize=(onecol_w_in, onecol_w_in * 0.88),
+        height_ratios=[0.05, 1.0],
     )
     plt.subplots_adjust(hspace=0.02, wspace=0.02)
 
     result = axis[1].scatter(
-        [None] * len(kick_angles),
-        [None] * len(kick_angles),
-        c=kick_angles,
+        [None] * len(thetas),
+        [None] * len(thetas),
+        c=qs,
         s=8,
-        cmap="coolwarm",
+        cmap="magma",
+        norm=mpl.colors.Normalize(vmin=min(qs), vmax=8.5),
     )
 
-    cm = plt.get_cmap("coolwarm")
-    cNorm = mplcolors.Normalize(vmin=min(kick_angles), vmax=max(kick_angles))
+    cm = plt.get_cmap("magma")
+    cNorm = mpl.colors.Normalize(vmin=min(qs), vmax=8.5)
     scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
+
     for i in range(len(thetas)):
-        markers, caps, bars = axis[1].errorbar(
+        if asymms[i] < 1e-2:
+            continue
+        axis[1].scatter(
             thetas[i],
-            ratios_L2M0[:, 0][i],
-            yerr=ratios_L2M0[:, 1][i],
-            fmt="o",
-            markersize=np.sqrt(8),
-            color=scalarMap.to_rgba(kick_angles[i]),
+            mismatches[i],
+            s=8,
+            color=scalarMap.to_rgba(qs[i]),
         )
-        [bar.set_alpha(0.4) for bar in bars]
 
     axis[1].set_yscale("log")
     axis[1].set_xlim(0 - 0.2, np.pi + 0.2)
@@ -881,155 +946,35 @@ def create_Figure4_supplement(thetas, ratios_L2M0, kick_angles):
         ]
     )
     axis[1].set_xticklabels(
-        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
-    )
-
-    angles = np.linspace(0, np.pi, 100)
-    rotation_factors = np.array(
         [
-            abs(compute_rotation_factor((2, 2), (2, 0), angle))
-            / abs(compute_rotation_factor((2, 2), (2, 2), angle))
-            for angle in angles
+            r"$0$",
+            None,
+            r"$\pi/4$",
+            None,
+            r"$\pi/2$",
+            None,
+            r"$3\pi/4$",
+            None,
+            r"$\pi$",
         ]
     )
 
-    axis[1].plot(
-        angles,
-        rotation_factors,
-        label=r"$\cfrac{\mathfrak{D}_{0,2}^{2}(\theta)}{\mathfrak{D}_{2,2}^{2}(\theta)}$",
-        zorder=np.inf,
-    )
-
-    xlim = axis[1].get_xlim()
-    axis[1].plot(
-        np.arange(-np.pi, 2 * np.pi, 0.01),
-        np.ones_like(np.arange(-np.pi, 2 * np.pi, 0.01)),
-        ls="--",
-        color=colors[0],
-        lw=1.4,
-        alpha=0.6,
-        zorder=np.inf - 1,
-    )
-    axis[1].set_xlim(xlim)
-
-    axis[1].set_ylim(top=2e2)
+    axis[1].set_yticks([1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0])
 
     axis[1].set_xlabel(r"misalignment angle $\theta$", fontsize=10)
-    axis[1].set_ylabel(r"$A_{(+,2,0,0)}/A_{(+,2,2,0)}$", fontsize=10)
-
-    axis[1].legend(loc="lower right", frameon=True, framealpha=1, fontsize=10)
+    axis[1].set_ylabel(
+        r"$\mathcal{M}\left(h^{\mathrm{coprec.}}_{\mathrm{exact}},h^{\mathrm{coprec.}}_{\mathrm{Euler\,angle\,approx.}}\right)|_{t_{0}=0M}^{t_{f}=100M}$",
+        fontsize=10,
+    )
 
     c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
 
     c.ax.xaxis.set_ticks_position("top")
-    c.ax.set_xticks(
-        [
-            0.0,
-            np.pi / 8,
-            2 * np.pi / 8,
-            3 * np.pi / 8,
-            4 * np.pi / 8,
-            5 * np.pi / 8,
-            6 * np.pi / 8,
-            7 * np.pi / 8,
-            np.pi,
-        ]
-    )
-    c.ax.set_xticklabels(
-        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
-    )
-    c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=10, labelpad=-30)
+    c.ax.set_xlim(1, 8)
+    c.ax.xaxis.set_ticks([1, 2, 3, 4, 5, 6, 7, 8])
+    c.ax.set_xlabel(r"mass ratio $q$", fontsize=10, labelpad=-30)
 
-    plt.savefig(f"CCEFigures/supplement_Figure4.pdf", bbox_inches="tight")
-
-
-def create_Figure5_supplement(thetas, ratios_L2M2, kick_angles):
-    fig, axis = plt.subplots(
-        2, 1, figsize=(onecol_w_in, onecol_w_in * 0.8), height_ratios=[0.05, 1]
-    )
-    plt.subplots_adjust(hspace=0.02, wspace=0.02)
-
-    result = axis[1].scatter(
-        [None] * len(kick_angles),
-        [None] * len(kick_angles),
-        c=kick_angles,
-        s=8,
-        cmap="coolwarm",
-    )
-
-    cm = plt.get_cmap("coolwarm")
-    cNorm = mplcolors.Normalize(vmin=min(kick_angles), vmax=max(kick_angles))
-    scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
-    for i in range(len(thetas)):
-        markers, caps, bars = axis[1].errorbar(
-            thetas[i],
-            ratios_L2M2[:, 0][i],
-            yerr=ratios_L2M2[:, 1][i],
-            fmt="o",
-            markersize=np.sqrt(8),
-            color=scalarMap.to_rgba(kick_angles[i]),
-        )
-        [bar.set_alpha(0.4) for bar in bars]
-
-    axis[1].set_yscale("log")
-    axis[1].set_xlim(0 - 0.2, np.pi + 0.2)
-
-    axis[1].set_xticks(
-        [
-            0.0,
-            np.pi / 8,
-            2 * np.pi / 8,
-            3 * np.pi / 8,
-            4 * np.pi / 8,
-            5 * np.pi / 8,
-            6 * np.pi / 8,
-            7 * np.pi / 8,
-            np.pi,
-        ]
-    )
-    axis[1].set_xticklabels(
-        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
-    )
-
-    angles = np.linspace(0, np.pi, 100)
-
-    xlim = axis[1].get_xlim()
-    axis[1].plot(
-        np.arange(-np.pi, 2 * np.pi, 0.01),
-        np.ones_like(np.arange(-np.pi, 2 * np.pi, 0.01)),
-        ls="--",
-        color=colors[0],
-        lw=1.4,
-        alpha=0.6,
-        zorder=np.inf,
-    )
-    axis[1].set_xlim(xlim)
-
-    axis[1].set_xlabel(r"misalignment angle $\theta$", fontsize=10)
-    axis[1].set_ylabel(r"$A_{(+,2,-2,0)}/A_{(+,2,2,0)}$", fontsize=10)
-
-    c = fig.colorbar(result, cax=axis[0], orientation="horizontal", pad=0)
-
-    c.ax.xaxis.set_ticks_position("top")
-    c.ax.set_xticks(
-        [
-            0.0,
-            np.pi / 8,
-            2 * np.pi / 8,
-            3 * np.pi / 8,
-            4 * np.pi / 8,
-            5 * np.pi / 8,
-            6 * np.pi / 8,
-            7 * np.pi / 8,
-            np.pi,
-        ]
-    )
-    c.ax.set_xticklabels(
-        [r"$0$", None, r"$\pi/4$", None, r"$\pi/2$", None, r"$3\pi/4$", None, r"$\pi$"]
-    )
-    c.ax.set_xlabel(r"kick velocity angle $\phi$", fontsize=10, labelpad=-30)
-
-    plt.savefig(f"CCEFigures/supplement_Figure5.pdf", bbox_inches="tight")
+    plt.savefig("CCEFigures/OShaughnessy_violation.pdf", bbox_inches="tight")
 
 
 def compute_mode_amplitude(data, mode, pro_retro=False, mirror=False):
@@ -1375,7 +1320,6 @@ def main():
     # Construct relevant arrays for ratios, parameters, etc.
     qs = []
     chi_fs = []
-    chi_ps = []
 
     thetas = []
     kick_angles = []
@@ -1386,6 +1330,8 @@ def main():
     t0s = []
     CVs = []
 
+    OShaughnessy_mismatches = []
+
     ratios_L2M2 = []
 
     ratios_L2M1 = []
@@ -1394,6 +1340,7 @@ def main():
     ratios_L2M1_pro_retro_mirror = []
 
     ratios_L2M0 = []
+    ratios_L2M0_retro = []
     ratios_L2M0_pro_retro = []
     ratios_L2M0_mirror = []
     ratios_L2M0_pro_retro_mirror = []
@@ -1416,16 +1363,8 @@ def main():
 
         chi_fs.append(data[simulation]["chi_f"])
 
-        chi1 = data[simulation]["chi1"]
-        chi2 = data[simulation]["chi2"]
-
-        # Patricia Schmidt definition
-        sin_theta1 = np.sin(np.arccos(np.dot(chi1, [0, 0, 1]) / np.linalg.norm(chi1)))
-        sin_theta2 = np.sin(np.arccos(np.dot(chi2, [0, 0, 1]) / np.linalg.norm(chi2)))
-        chi_p = max(np.linalg.norm(chi1[:2]), np.linalg.norm(chi2[:2]))
-        chi_ps.append(chi_p)
-
         thetas.append(data[simulation]["theta"])
+
         kick_angles.append(data[simulation]["kick theta"])
         kick_rapidities.append(data[simulation]["kick rapidity"])
 
@@ -1433,6 +1372,8 @@ def main():
         mismatches.append(data[simulation]["mismatch"])
         t0s.append(data[simulation]["best t0"])
         CVs.append(data[simulation]["best CV"])
+
+        OShaughnessy_mismatches.append(data[simulation]["R_error"])
 
         ratios_L2M2.append(
             compute_ratio(data[simulation], (2, -2, 0, -1), (2, 2, 0, 1))
@@ -1470,6 +1411,9 @@ def main():
         )
 
         ratios_L2M0.append(compute_ratio(data[simulation], (2, 0, 0, 1), (2, 2, 0, 1)))
+        ratios_L2M0_retro.append(
+            compute_ratio(data[simulation], (2, 0, 0, -1), (2, 2, 0, 1))
+        )
         ratios_L2M0_pro_retro.append(
             compute_ratio(
                 data[simulation],
@@ -1493,8 +1437,10 @@ def main():
                 data[simulation],
                 (2, 0, 0, 1),
                 (2, 2, 0, 1),
-                mode1_pro_retro=False,
+                mode1_pro_retro=True,
                 mode2_pro_retro=True,
+                mode1_mirror=True,
+                mode2_mirror=True,
             )
         )
 
@@ -1541,7 +1487,6 @@ def main():
         )
 
     qs = np.array(qs)
-    chi_ps = np.array(chi_ps)
 
     thetas = np.array(thetas)
     kick_angles = np.array(kick_angles)
@@ -1560,6 +1505,7 @@ def main():
     ratios_L2M1_pro_retro_mirror = np.array(ratios_L2M1_pro_retro_mirror)
 
     ratios_L2M0 = np.array(ratios_L2M0)
+    ratios_L2M0_retro = np.array(ratios_L2M0_retro)
     ratios_L2M0_pro_retro = np.array(ratios_L2M0_pro_retro)
     ratios_L2M0_mirror = np.array(ratios_L2M0_mirror)
     ratios_L2M0_pro_retro_mirror = np.array(ratios_L2M0_pro_retro_mirror)
@@ -1576,30 +1522,25 @@ def main():
     ratios_L3M1 = np.array(ratios_L3M1)
     ratios_L3M0 = np.array(ratios_L3M0)
 
-    create_Figure1(
-        qs,
-        thetas,
-        ratios_L2M1_mirror,
-        ratios_L2M1_pro_retro_mirror,
+    create_L2M1_and_L2M0_figure(
+        qs, thetas, ratios_L2M1_pro_retro_mirror, ratios_L2M0_pro_retro_mirror
     )
 
-    create_Figure2(thetas, ratios_L2M1, pro_retro_ratios_L2M2, kick_angles)
+    create_kick_velocity_figure(thetas, ratios_L2M0, pro_retro_ratios_L2M2, kick_angles)
 
-    create_Figure3(
+    create_mode_asymmetries_figure(
         list(data.keys()), mirror_mode_ratios, mirror_mode_ratio_errors, N_systems=6
     )
 
-    create_Figure1_supplement(thetas, errors, chi_fs)
+    create_QNM_fit_error_figure(thetas, errors, chi_fs)
 
-    create_Figure2_supplement(thetas, asymms, kick_rapidities)
+    create_parity_breaking_figure(thetas, asymms, kick_rapidities)
 
-    create_Figure3_supplement(
+    create_higher_harmonics_vs_prediction_figure(
         thetas, ratios_L3M2, ratios_L3M1, ratios_L3M0, kick_angles
     )
 
-    create_Figure4_supplement(thetas, ratios_L2M0, kick_angles)
-
-    create_Figure5_supplement(thetas, ratios_L2M2, kick_angles)
+    create_OShaughnessy_figure(thetas, asymms[:, 0], qs, OShaughnessy_mismatches)
 
 
 if __name__ == "__main__":
