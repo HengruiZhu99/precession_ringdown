@@ -963,7 +963,7 @@ def create_OShaughnessy_figure(thetas, asymms, qs, mismatches):
 
     axis[1].set_xlabel(r"misalignment angle $\theta$", fontsize=10)
     axis[1].set_ylabel(
-        r"$\mathcal{M}\left(h^{\mathrm{coprec.}}_{\mathrm{exact}},h^{\mathrm{coprec.}}_{\mathrm{Euler\,angle\,approx.}}\right)|_{t_{0}=0M}^{t_{f}=100M}$",
+        r"$\mathcal{M}\left(h,h^{\mathrm{from\,coprec.\,via\,Euler\,angle\,approx.}}\right)$",
         fontsize=10,
     )
 

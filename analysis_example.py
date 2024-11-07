@@ -220,8 +220,8 @@ def compute_Euler_angle_error(h, chi_f, M_f):
     h_coprec_NR = h.copy()
     h_coprec_NR = h_coprec_NR.rotate_decomposition_basis(q_NR)
 
-    h_coprec_PHM = h.copy()
-    h_coprec_PHM = h_coprec_PHM.rotate_decomposition_basis(q_PHM)
+    h_inertial_via_PHM = h_coprec_NR.copy()
+    h_inertial_via_PHM = h_inertial_via_PHM.rotate_decomposition_basis([q.inverse() for q in q_PHM])
 
     def compute_mismatch(h1, h2):
         overlap = integrate(MT_to_WM(WM_to_MT(h1) * WM_to_MT(h2).bar).norm(), h1.t)[
@@ -236,7 +236,7 @@ def compute_Euler_angle_error(h, chi_f, M_f):
 
         return 1.0 - overlap / np.sqrt(norm1 * norm2)
 
-    R_error = compute_mismatch(h_coprec_NR, h_coprec_PHM)
+    R_error = compute_mismatch(h, h_inertial_via_PHM)
 
     return R_error, theta
 
